@@ -1,69 +1,72 @@
+# BotFramework Utilities: Azure CLI Samples
 
-# BotFramework Utilities (AZ-CLI)
+A catalog of PowerShell scripts for deploying and configuring Microsoft 365 Agents SDK, Azure healthcare agent service, and legacy Bot Builder SDK samples on Azure.
 
-A concise catalog of PowerShell scripts for deploying and configuring an Bots on Azure, including Direct Line App Service Extension (DL ASE) setup and network isolation.
-
-![ExecutinScript](https://github.com/user-attachments/assets/a39a7017-0adb-42f8-91c4-4f344788903d)
-
+![Executing a sample script](https://github.com/user-attachments/assets/a39a7017-0adb-42f8-91c4-4f344788903d)
 
 ---
 
-## Script Index
+## Sample index
 
-Agents SDK based deploying scripts:
-
-| Script | Purpose | Resources |
-|---|---|---|
-| `DeployAgentsBotTemplateToNewRG.ps1` | Provisions a .NET Agents SDK bot on Azure App Service (Windows) — logs in and sets the subscription, creates a resource group, Windows App Service plan and Web App (WebSockets, .NET runtime), registers an Entra app and secret, configures Azure Bot registration, clones the microsoft/Agents repository, builds the quickstart sample, creates appsettings.json with Agents SDK authentication (MSAL), and deploys via ZIP to App Service. | <img width="559" height="253" alt="image" src="https://github.com/user-attachments/assets/d2a8db4f-69d3-4a30-96e7-5a9ea0e0127f" />|
-| `DeployAgentsSDKtoDLASE.ps1` | Provisions the .NET Agents SDK `NamedPipeAgent` sample with Direct Line App Service Extension on Azure App Service (Windows) — creates a configurable App Service plan (B1 by default), enables Direct Line and WebSockets, configures the `<site>.directline` named-pipe transport, deploys the sample, adds a test-only Web Chat client, and verifies the `/.bot` extension health endpoint. | |
-| `DeploySemanticKernelMultiturnToNewRG.ps1` | Provisions a .NET Agents SDK bot with Semantic Kernel and Azure OpenAI on Azure App Service (Windows) — logs in and sets subscription, creates resource group, creates Azure OpenAI resource with custom subdomain and deploys GPT model, creates App Service plan and Web App (WebSockets enabled), enables system-assigned managed identity on App Service, grants Cognitive Services OpenAI User role to the managed identity, registers Entra app and secret, configures Azure Bot registration, clones the microsoft/Agents repository, builds the semantic-kernel-multiturn sample, modifies Program.cs to use DefaultAzureCredential for token-based authentication, creates appsettings.json with Agents SDK authentication and Azure OpenAI endpoint (no API key), and deploys via ZIP to App Service. | <img width="324" height="169" alt="image" src="https://github.com/user-attachments/assets/8db95b9b-2ba5-46ea-92ad-c33d1a478c23" />
-|
-
-Here is the result of `DeploySemanticKernelMultiturnToNewRG.ps1`: 
-
-![SemanticKernelBotResponds](https://github.com/user-attachments/assets/6a27b3af-94bb-42e4-9e02-769d30819d42)
-
-
-Bot Builder SDK based deploying scripts:
+### Microsoft 365 Agents SDK
 
 | Script | Purpose | Resources |
 |---|---|---|
-| `DeployBBEchoBotTemplateToNewRG.ps1` | Provisions an Bot Builder Echo Bot on Azure — logs in and sets the subscription, creates a resource group, App Service plan and Web App (WebSockets), registers an Entra app and secret, configures app settings, creates a Bot Service registration, builds and deploys the BotBuilder echo sample, and writes a test index.html for classic Direct Line. |<img width="499" height="144" alt="image" src="https://github.com/user-attachments/assets/42d04b7d-00c8-4028-9c0e-df6dbd3ca3da"/>|
-| `DeployBBEchoBotDirectlineASEToNewRG.ps1` | Provisions and configures an Echo Bot with Direct Line App Service Extension — sets subscription and resource group, creates VNet/subnets, App Service plan and Web App (WebSockets), registers Entra app and secret, creates Bot registration, enables and configures DL ASE (extension key/version) via app settings, builds and deploys the Echo sample, writes DL ASE test pages, attempts best‑effort DL secret capture, and restarts the app. | <img width="516" height="335" alt="image" src="https://github.com/user-attachments/assets/226855d7-f154-42d1-94fd-89487d238272" />|
-| `PerformDirectlineASEIsolationSteps.ps1` | Complementary script to DeployBBEchoBotDirectlineASEToNewRG.ps1, as it applies DL ASE isolation steps for an already created bot — adds integration and private endpoint subnets, configures NSGs (allow Bot Service/AAD, deny defaults), integrates Web App with VNet (route all outbound), creates private DNS zones and links, provisions Private Endpoints for sites and SCM, and disables public network access. | <img width="523" height="329" alt="image" src="https://github.com/user-attachments/assets/9e47e75f-86cb-4ab8-9dbd-a421415b6391" />|
+| [`DeployAgentsBotTemplateToNewRG.ps1`](./AgentsSDKSamples/DeployAgentsBotTemplateToNewRG.ps1) | Deploys the .NET Agents SDK quickstart to Windows App Service with an Entra application, Azure Bot registration, and Agents SDK authentication configuration. | <img width="559" height="253" alt="Azure resources created by the Agents SDK template sample" src="https://github.com/user-attachments/assets/d2a8db4f-69d3-4a30-96e7-5a9ea0e0127f" /> |
+| [`DeployAgentsSDKtoDLASE.ps1`](./AgentsSDKSamples/DeployAgentsSDKtoDLASE.ps1) | Deploys the .NET `NamedPipeAgent` sample to Windows App Service with Direct Line App Service Extension, a test Web Chat client, and `/.bot` health verification. | |
+| [`DeployOTelAgentToNewRG.ps1`](./AgentsSDKSamples/DeployOTelAgentToNewRG.ps1) | Deploys the .NET `OTelAgent` sample to Windows App Service and configures Application Insights for OpenTelemetry export. | |
+| [`DeployPythonAutoSignInAgentToNewRG.ps1`](./AgentsSDKSamples/DeployPythonAutoSignInAgentToNewRG.ps1) | Deploys the Python auto-sign-in Agents SDK sample to Linux App Service and configures Microsoft Graph and GitHub OAuth connections. | |
+| [`DeploySemanticKernelMultiturnToNewRG.ps1`](./AgentsSDKSamples/DeploySemanticKernelMultiturnToNewRG.ps1) | Deploys the .NET Semantic Kernel multiturn sample with Azure OpenAI, managed identity, and Agents SDK authentication. | <img width="324" height="169" alt="Azure resources created by the Semantic Kernel sample" src="https://github.com/user-attachments/assets/8db95b9b-2ba5-46ea-92ad-c33d1a478c23" /> |
 
-After each script is finished, it will flush the replay variables, which include all the variables required for powershell for next sessions.
+Semantic Kernel multiturn sample result:
 
-> **⚠️ DEPRECATION NOTICE**: The Bot Builder SDK scripts above are provided for legacy support only. The Bot Builder SDK has been deprecated by Microsoft. **New projects should use the Agents SDK** (see `DeployAgentsBotTemplateToNewRG.ps1` above), which offers modern authentication patterns, improved security, and active support. For migration guidance, see the [Microsoft Agents SDK documentation](https://github.com/microsoft/Agents).
+![Semantic Kernel bot responding](https://github.com/user-attachments/assets/6a27b3af-94bb-42e4-9e02-769d30819d42)
+
+### Azure healthcare agent service
+
+| Script | Purpose |
+|---|---|
+| [`DeployHealthBotToNewRG.ps1`](./HealthbotSamples/DeployHealthBotToNewRG.ps1) | Deploys an Azure healthcare agent service resource (formerly Azure Health Bot), validates regional availability, optionally assigns the signed-in user the Healthcare Agent Admin role, and links to the supported custom-scenario workflow. |
+
+See the [healthcare agent service sample guide](./HealthbotSamples/README.md) for the custom `hello` scenario steps.
+
+### Bot Builder SDK (legacy)
+
+| Script | Purpose | Resources |
+|---|---|---|
+| [`DeployBBEchoBotTemplateToNewRG.ps1`](./BotBuilderSDKSamples/DeployBBEchoBotTemplateToNewRG.ps1) | Deploys the legacy Bot Builder Echo Bot sample to Azure App Service with Azure Bot registration and a classic Direct Line test client. | <img width="499" height="144" alt="Azure resources created by the Bot Builder Echo Bot sample" src="https://github.com/user-attachments/assets/42d04b7d-00c8-4028-9c0e-df6dbd3ca3da" /> |
+| [`DeployBBEchoBotDirectlineASEToNewRG.ps1`](./BotBuilderSDKSamples/DeployBBEchoBotDirectlineASEToNewRG.ps1) | Deploys the legacy Echo Bot with Direct Line App Service Extension, named pipes, test clients, and supporting network resources. | <img width="516" height="335" alt="Azure resources created by the Direct Line ASE sample" src="https://github.com/user-attachments/assets/226855d7-f154-42d1-94fd-89487d238272" /> |
+| [`PerformDirectlineASEIsolationSteps.ps1`](./BotBuilderSDKSamples/PerformDirectlineASEIsolationSteps.ps1) | Applies VNet integration, NSGs, private endpoints, private DNS, and public-access restrictions to the Direct Line ASE deployment. | <img width="523" height="329" alt="Azure resources created by the Direct Line ASE isolation sample" src="https://github.com/user-attachments/assets/9e47e75f-86cb-4ab8-9dbd-a421415b6391" /> |
+
+See the [Bot Builder SDK deprecation and migration notice](./BotBuilderSDKSamples/README.md) before using these scripts.
+
+> [!WARNING]
+> The Bot Builder SDK scripts are retained for legacy support only. For new development, use the Microsoft 365 Agents SDK. For migration guidance, see [Azure Bot Framework SDK to Microsoft 365 Agents SDK migration guidance for .NET](https://learn.microsoft.com/microsoft-365/agents-sdk/bf-migration-dotnet).
 
 ---
 
 ## Notes
 
-- All purposes above are sourced from each script’s summary section for accuracy.
-- Handle secrets (e.g., `AppSecret`, `DLSecret`) securely; do not commit or expose in client code.
-- Some operations (e.g., Direct Line secret retrieval) may require portal actions or Key Vault storage depending on policy.
+- Update the fixed parameters near the top of each script before running it.
+- Handle secrets such as `AppSecret` and `DLSecret` securely. Do not commit or expose them in client code.
+- Some operations, including Direct Line secret retrieval, can require portal actions or Key Vault storage depending on organizational policy.
+- Scripts can create billable Azure resources. Review the selected regions and SKUs before execution.
 
----
+## Quick start
 
-## Quick Start
-
-- Open PowerShell (`pwsh`) and run the desired script after updating parameters near the top of the file.
+Open PowerShell 7 and run the desired script from the repository root:
 
 ```powershell
-# Example
-pwsh ./AZ-CLI/DeployAgentsBotTemplateToNewRG.ps1
+pwsh ./AZ-CLI/AgentsSDKSamples/DeployAgentsBotTemplateToNewRG.ps1
 ```
 
 ---
 
-© BotFrameworkUtilities
+Copyright (c) Mert Ozturk
 
----
+## License
 
-**Developer:** Mert Ozturk
-
-**License (MIT):**
+MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
