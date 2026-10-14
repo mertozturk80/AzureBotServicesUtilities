@@ -31,8 +31,7 @@ $ErrorActionPreference = "Stop"
 # ============================================================
 # 0) Fixed parameters. Edit the subscription and suffix before running.
 # ============================================================
-#$SubscriptionId = "xxxxxx-xxxxxxxx-xxxxxxxxxxxxxx"
-$SubscriptionId = "83454b68-9b7f-41a7-b08e-936b629f865b"
+$SubscriptionId = "xxxxxx-xxxxxxxx-xxxxxxxxxxxxxx"
 $RG              = "AgentsDLASEResourceGroup"
 $Location        = "southindia"
 $BotLocation     = "global"
