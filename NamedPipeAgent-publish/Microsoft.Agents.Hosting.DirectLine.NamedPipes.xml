@@ -1,0 +1,744 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Agents.Hosting.DirectLine.NamedPipes</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeActivityHandler">
+            <summary>
+            Handles inbound named pipe requests by invoking the agent's turn pipeline directly,
+            without any HTTP roundtrip. Activities arrive from the named pipe and are passed
+            to <see cref="M:Microsoft.Agents.Builder.IChannelAdapter.ProcessActivityAsync(System.Security.Claims.ClaimsIdentity,Microsoft.Agents.Core.Models.IActivity,Microsoft.Agents.Builder.AgentCallbackHandler,System.Threading.CancellationToken)"/>.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeActivityHandler"/> class.
+            </remarks>
+            <param name="services">The service provider for resolving scoped dependencies.</param>
+            <param name="logger">The logger instance.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeActivityHandler.#ctor(System.IServiceProvider,Microsoft.Extensions.Logging.ILogger{Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeActivityHandler})">
+            <summary>
+            Handles inbound named pipe requests by invoking the agent's turn pipeline directly,
+            without any HTTP roundtrip. Activities arrive from the named pipe and are passed
+            to <see cref="M:Microsoft.Agents.Builder.IChannelAdapter.ProcessActivityAsync(System.Security.Claims.ClaimsIdentity,Microsoft.Agents.Core.Models.IActivity,Microsoft.Agents.Builder.AgentCallbackHandler,System.Threading.CancellationToken)"/>.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeActivityHandler"/> class.
+            </remarks>
+            <param name="services">The service provider for resolving scoped dependencies.</param>
+            <param name="logger">The logger instance.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeActivityHandler.HandleAsync(Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeRequest,System.Threading.CancellationToken)">
+            <summary>
+            Process an inbound named pipe request. Returns a <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse"/>.
+            </summary>
+            <param name="request">The inbound request.</param>
+            <param name="cancellationToken">A cancellation token.</param>
+            <returns>A response indicating the result of processing.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeActivityHandler.IsJsonContentType(System.String)">
+            <summary>
+            Returns true when the supplied value parses as a JSON media type
+            (e.g., <c>application/json</c> or <c>application/json; charset=utf-8</c>),
+            false for any other type or unparseable input.
+            Strict match — refuses near-misses like <c>application/jsonfoo</c>.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeHostedService">
+            <summary>
+            Background service that manages the named pipe server lifecycle.
+            Accepts client connections, wires up the protocol, and handles reconnection.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeHostedService"/> class.
+            </remarks>
+            <param name="activityHandler">The activity handler for processing inbound requests.</param>
+            <param name="messageHandler">The message handler for outbound pipe routing.</param>
+            <param name="logger">The logger instance.</param>
+            <param name="configuration">The application configuration.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeHostedService.#ctor(Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeActivityHandler,Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler,Microsoft.Extensions.Logging.ILogger{Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeHostedService},Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Background service that manages the named pipe server lifecycle.
+            Accepts client connections, wires up the protocol, and handles reconnection.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeHostedService"/> class.
+            </remarks>
+            <param name="activityHandler">The activity handler for processing inbound requests.</param>
+            <param name="messageHandler">The message handler for outbound pipe routing.</param>
+            <param name="logger">The logger instance.</param>
+            <param name="configuration">The application configuration.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeHostedService.ExecuteAsync(System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler">
+            <summary>
+            Custom <see cref="T:System.Net.Http.HttpMessageHandler"/> that intercepts outgoing HTTP requests destined for
+            the named pipe service URL (urn:botframework:namedpipe:*) and routes them
+            back through the named pipe protocol instead of making an actual HTTP call.
+            </summary>
+            <remarks>
+            This enables the Agents SDK's ConversationsRestClient to send reply activities
+            back to DirectLineFlex through the named pipe, without any HTTP roundtrip.
+            </remarks>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler"/> class.
+            </remarks>
+            <param name="logger">The logger instance.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler.#ctor(Microsoft.Extensions.Logging.ILogger{Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler})">
+            <summary>
+            Custom <see cref="T:System.Net.Http.HttpMessageHandler"/> that intercepts outgoing HTTP requests destined for
+            the named pipe service URL (urn:botframework:namedpipe:*) and routes them
+            back through the named pipe protocol instead of making an actual HTTP call.
+            </summary>
+            <remarks>
+            This enables the Agents SDK's ConversationsRestClient to send reply activities
+            back to DirectLineFlex through the named pipe, without any HTTP roundtrip.
+            </remarks>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler"/> class.
+            </remarks>
+            <param name="logger">The logger instance.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler.SetProtocol(Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol)">
+            <summary>
+            Set the active named pipe protocol instance. Called by the hosted service
+            when a pipe connection is established.
+            </summary>
+            <param name="protocol">The protocol instance, or null when disconnected.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler.SendViaPipeAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
+            <summary>
+            Send a request through the named pipe. Invoked by <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.PipeRoutingDelegatingHandler"/>.
+            </summary>
+            <param name="request">The HTTP request to route.</param>
+            <param name="cancellationToken">A cancellation token.</param>
+            <returns>An HTTP response constructed from the pipe response.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler.SendAsync(System.Net.Http.HttpRequestMessage,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.PipeUriPredicate">
+            <summary>
+            Helpers for identifying request URIs that must be routed through the named pipe transport.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.PipeUriPredicate.NamedPipeUriPrefix">
+            <summary>
+            The required scheme + authority prefix produced by the named pipe ingress.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.PipeUriPredicate.IsNamedPipeUri(System.Uri)">
+            <summary>
+            Returns true when the URI is a well-formed named-pipe service URL that should be
+            routed through the local pipe transport rather than over HTTP.
+            </summary>
+            <param name="uri">The URI to evaluate. May be null.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment">
+            <summary>
+            Represents a binary stream that travels alongside a request or response payload
+            (e.g. an attachment uploaded by a DirectLine client). On the wire each attachment
+            is described by an entry in <see cref="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload.Streams"/> /
+            <see cref="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ResponsePayload.Streams"/> at index &gt; 0, and its bytes are delivered
+            as a separately-identified <see cref="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes.Stream"/> frame sequence.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment.Id">
+            <summary>
+            Gets or sets the wire identifier (GUID, "D" format) that links this attachment to
+            its <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.PayloadDescription"/> on the request/response payload.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment.ContentType">
+            <summary>
+            Gets or sets the MIME content type advertised by the peer.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment.Body">
+            <summary>
+            Gets or sets the assembled attachment bytes.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol">
+            <summary>
+            The named pipe protocol engine. Reads/writes framed messages over the transport,
+            correlates request/response pairs, and dispatches to a handler.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol"/> class.
+            </remarks>
+            <param name="reader">The transport for reading incoming frames.</param>
+            <param name="writer">The transport for writing outgoing frames.</param>
+            <param name="logger">The logger instance.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.#ctor(Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport,Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            The named pipe protocol engine. Reads/writes framed messages over the transport,
+            correlates request/response pairs, and dispatches to a handler.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol"/> class.
+            </remarks>
+            <param name="reader">The transport for reading incoming frames.</param>
+            <param name="writer">The transport for writing outgoing frames.</param>
+            <param name="logger">The logger instance.</param>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.MaxPayloadSize">
+            <summary>
+            Maximum payload size per frame. The wire header encodes length as 6 ASCII digits,
+            so 999,999 is the protocol ceiling.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.PendingDispatchTimeoutSeconds">
+            <summary>
+            Maximum time (seconds) a pending dispatch waits for streams before force-dispatching.
+            Prevents a misbehaving peer from permanently blocking the pipe.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.MaxStreamBuffers">
+            <summary>
+            Maximum number of concurrent stream buffers. Limits memory usage from
+            unmatched stream frames.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.MaxSendStreamChunkSize">
+            <summary>
+            Outbound stream chunk size (64 KB). Matches the JS SDK and reduces DLFlex
+            write-lock contention vs the legacy 4 KB value.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.TrailingByteDrainTimeoutSeconds">
+            <summary>
+            Maximum time (seconds) for draining trailing unframed bytes. If exceeded, the
+            connection is torn down (partial drain corrupts framing).
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.MaxStreamSize">
+            <summary>
+            Maximum cumulative bytes buffered per stream id. Bounds memory from a misbehaving
+            peer that never sets End. 100 MiB covers expected payloads; worst-case total is
+            MaxStreamBuffers × MaxStreamSize ≈ 10 GiB before disconnect.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.OnRequestReceived">
+            <summary>
+            Gets or sets the handler invoked when an inbound request is received
+            (e.g., POST /api/messages from DirectLineFlex).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.Completion">
+            <summary>
+            Gets a task that completes when the read loop exits, either due to
+            pipe disconnection, a protocol error, or disposal. Callers can await
+            this to be signalled of disconnect without polling.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.Start">
+            <summary>
+            Start the background read loop that processes incoming frames.
+            Must be called at most once per instance.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.SendRequestAsync(System.String,System.String,System.Byte[],System.Threading.CancellationToken)">
+            <summary>
+            Send a request to the remote end and wait for its response.
+            Used for outbound activities (agent → DirectLineFlex).
+            </summary>
+            <param name="verb">The HTTP verb.</param>
+            <param name="path">The request path.</param>
+            <param name="body">The request body, or null.</param>
+            <param name="cancellationToken">A cancellation token.</param>
+            <returns>The response from the remote end.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.SendRequestAsync(System.String,System.String,System.Byte[],System.Collections.Generic.IList{Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment},System.String,System.Threading.CancellationToken)">
+            <summary>
+            Send a request with optional multi-stream attachments and wait for a response.
+            </summary>
+            <param name="verb">The HTTP verb (e.g., POST, GET). Required.</param>
+            <param name="path">The request path (e.g., /api/messages). Required.</param>
+            <param name="body">The request body bytes for the primary stream, or null for an empty body.</param>
+            <param name="attachments">Optional additional streams to deliver alongside the primary body, or null.</param>
+            <param name="contentType">Content type for the primary body stream; defaults to <c>application/json</c> when null or empty.</param>
+            <param name="cancellationToken">A cancellation token observed for the duration of the call.</param>
+            <returns>The response from the remote end.</returns>
+            <exception cref="T:System.ArgumentException">Thrown if <paramref name="verb"/> or <paramref name="path"/> is null, empty, or whitespace.</exception>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.AllStreamsComplete(System.Collections.Generic.List{Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.PayloadDescription},System.Guid,System.Collections.Generic.HashSet{System.Guid})">
+            <summary>
+            Returns true when every stream referenced by the Streams[] descriptors has End=true.
+            Malformed ids are treated as complete to avoid blocking dispatch forever.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.ExtractRequestPayload(Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header,Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload,System.Collections.Generic.Dictionary{System.Guid,System.IO.MemoryStream},System.Collections.Generic.HashSet{System.Guid},System.Collections.Generic.Dictionary{System.Guid,System.Int32})">
+            <summary>
+            Extracts the primary body and attachment streams for a request. Streams[0] is the
+            body; Streams[1..N] are attachments. Must only be called on the read-loop thread.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.TakeStreamBody(Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.PayloadDescription,System.Guid,System.Collections.Generic.Dictionary{System.Guid,System.IO.MemoryStream},System.Collections.Generic.HashSet{System.Guid},System.Collections.Generic.Dictionary{System.Guid,System.Int32})">
+            <summary>
+            Removes and returns the assembled bytes for a stream descriptor, or null if not found.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.TakeAttachmentStreams(System.Collections.Generic.List{Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.PayloadDescription},System.Guid,System.Collections.Generic.Dictionary{System.Guid,System.IO.MemoryStream},System.Collections.Generic.HashSet{System.Guid},System.Collections.Generic.Dictionary{System.Guid,System.Int32})">
+            <summary>
+            Removes and returns <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment"/> instances for Streams[1..N].
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.StartDispatch(Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header,Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload,System.Byte[],System.String,System.Collections.Generic.List{Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment},System.Threading.CancellationToken)">
+            <summary>
+            Creates a per-request CTS linked to the read-loop token and starts the dispatch task.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.HandleCancelStreamFrame(System.Guid,System.Collections.Generic.Dictionary{System.Guid,System.IO.MemoryStream},System.Collections.Generic.HashSet{System.Guid},System.Collections.Generic.Dictionary{System.Guid,System.Int32},System.Collections.Generic.Dictionary{System.Guid,System.ValueTuple{Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header,Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload,System.Int64}})">
+            <summary>
+            Handles a CancelStream frame: drops buffered data, marks stream complete, and
+            cancels the in-flight dispatch if the id matches a request.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.HandleCancelAllFrame(System.Collections.Generic.Dictionary{System.Guid,System.IO.MemoryStream},System.Collections.Generic.HashSet{System.Guid},System.Collections.Generic.Dictionary{System.Guid,System.Int32},System.Collections.Generic.Dictionary{System.Guid,System.ValueTuple{Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header,Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload,System.Int64}},System.Collections.Generic.Dictionary{System.Guid,Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ResponsePayload})">
+            <summary>
+            Handles a CancelAll frame: clears all state, cancels in-flight dispatches, and
+            fails all pending outbound requests.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.SendCancelStreamAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Sends an outbound <see cref="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes.CancelStream"/> frame for the given stream
+            id. The frame carries a zero-length payload with End=true.
+            </summary>
+            <param name="streamId">The stream identifier to cancel.</param>
+            <param name="cancellationToken">A cancellation token observed while writing the frame.</param>
+            <returns>A task that completes when the cancel frame has been written.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.SendCancelAllAsync(System.Threading.CancellationToken)">
+            <summary>
+            Sends an outbound <see cref="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes.CancelAll"/> frame. The frame carries a
+            zero-length payload with End=true; the id field is unused per the wire format.
+            </summary>
+            <param name="cancellationToken">A cancellation token observed while writing the frame.</param>
+            <returns>A task that completes when the cancel-all frame has been written.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.MaterializeAttachmentIds(System.Collections.Generic.IList{Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment})">
+            <summary>
+            Generates (or reuses) a wire id for each attachment.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.BuildStreamDescriptors(System.Nullable{System.Guid},System.Nullable{System.Int32},System.Collections.Generic.IList{Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeAttachment},System.Guid[],System.String)">
+            <summary>
+            Builds the Streams[] descriptor list for the wire envelope. Returns null when empty
+            so the JSON property is omitted (matches Bot.Streaming behavior).
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeProtocol.DisposeAsync">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeRequest">
+            <summary>
+            Represents an incoming request received from the named pipe transport.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeRequest.Id">
+            <summary>
+            Gets or sets the unique identifier for this request.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeRequest.Verb">
+            <summary>
+            Gets or sets the HTTP verb (e.g., POST).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeRequest.Path">
+            <summary>
+            Gets or sets the request path (e.g., /api/messages).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeRequest.ContentType">
+            <summary>
+            Gets or sets the content type advertised on <c>Streams[0]</c> (the primary body).
+            Defaults to <c>application/json</c> when the peer omits it.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeRequest.Body">
+            <summary>
+            Gets or sets the request body bytes.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeRequest.Attachments">
+            <summary>
+            Gets or sets the additional attachment streams that traveled alongside this
+            request (Streams[1..N] on the wire). Empty list when no attachments were sent.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse">
+            <summary>
+            Represents a response to send back over the named pipe transport.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.StatusCode">
+            <summary>
+            Gets or sets the HTTP status code.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.ContentType">
+            <summary>
+            Gets or sets the content type advertised on <c>Streams[0]</c> (the primary body).
+            Defaults to <c>application/json</c>; set on outbound responses when sending a non-JSON body.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.Body">
+            <summary>
+            Gets or sets the response body bytes.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.Attachments">
+            <summary>
+            Gets or sets the additional attachment streams to send alongside the response
+            (Streams[1..N] on the wire). Null or empty when no attachments are needed.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.OK(System.Byte[])">
+            <summary>
+            Creates a 200 OK response with an optional body.
+            </summary>
+            <param name="body">The response body, or null.</param>
+            <returns>A new <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.Accepted">
+            <summary>
+            Creates a 202 Accepted response.
+            </summary>
+            <returns>A new <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.NotFound">
+            <summary>
+            Creates a 404 Not Found response.
+            </summary>
+            <returns>A new <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.UnsupportedMediaType">
+            <summary>
+            Creates a 415 Unsupported Media Type response.
+            </summary>
+            <returns>A new <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse.InternalServerError">
+            <summary>
+            Creates a 500 Internal Server Error response.
+            </summary>
+            <returns>A new <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.NamedPipeResponse"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.PayloadDescription">
+            <summary>
+            Describes a data stream attached to a request or response payload.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.PayloadDescription.Id">
+            <summary>
+            Gets or sets the stream identifier.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.PayloadDescription.ContentType">
+            <summary>
+            Gets or sets the content type of the stream.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.PayloadDescription.Length">
+            <summary>
+            Gets or sets the length of the stream data in bytes.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload">
+            <summary>
+            JSON payload for a Request frame (Type='A').
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload.Verb">
+            <summary>
+            Gets or sets the HTTP verb (e.g., POST, GET).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload.Path">
+            <summary>
+            Gets or sets the request path.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.RequestPayload.Streams">
+            <summary>
+            Gets or sets the list of associated data streams.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ResponsePayload">
+            <summary>
+            JSON payload for a Response frame (Type='B').
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ResponsePayload.StatusCode">
+            <summary>
+            Gets or sets the HTTP status code.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ResponsePayload.Streams">
+            <summary>
+            Gets or sets the list of associated data streams.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ReceiveResponse">
+            <summary>
+            Represents an incoming response received from the named pipe transport
+            (for outbound requests sent by the agent).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ReceiveResponse.StatusCode">
+            <summary>
+            Gets or sets the HTTP status code.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ReceiveResponse.ContentType">
+            <summary>
+            Gets or sets the content type advertised on <c>Streams[0]</c> (the primary body).
+            Defaults to <c>application/json</c> when the peer omits it.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ReceiveResponse.Body">
+            <summary>
+            Gets or sets the response body bytes.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Protocol.ReceiveResponse.Attachments">
+            <summary>
+            Gets or sets the additional attachment streams that traveled alongside this
+            response (Streams[1..N] on the wire). Empty list when no attachments were sent.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.ServiceCollectionExtensions">
+            <summary>
+            Extension methods for registering the named pipe transport
+            with the Agents SDK host builder.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.ServiceCollectionExtensions.AddAgentNamedPipeTransport(Microsoft.Extensions.Hosting.IHostApplicationBuilder)">
+            <summary>
+            Adds named pipe transport for the agent, enabling pipe-based
+            communication with DirectLineFlex without any HTTP roundtrips.
+            </summary>
+            <param name="builder">The host application builder.</param>
+            <returns>The same instance of <see cref="T:Microsoft.Extensions.Hosting.IHostApplicationBuilder"/> to allow for method chaining.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.ServiceCollectionExtensions.AddAgentNamedPipeTransport(Microsoft.Extensions.Hosting.IHostApplicationBuilder,System.String)">
+            <summary>
+            Adds named pipe transport for the agent, enabling pipe-based
+            communication with DirectLineFlex without any HTTP roundtrips.
+            </summary>
+            <param name="builder">The host application builder.</param>
+            <param name="pipeName">
+            The named pipe base name. When supplied, this explicitly overrides
+            <c>NamedPipe:PipeName</c> from configuration.
+            Two pipes are created: {pipeName}.incoming and {pipeName}.outgoing.
+            </param>
+            <returns>The same instance of <see cref="T:Microsoft.Extensions.Hosting.IHostApplicationBuilder"/> to allow for method chaining.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.PipeRoutingDelegatingHandler">
+            <summary>
+            <see cref="T:System.Net.Http.DelegatingHandler"/> that routes urn:botframework:namedpipe requests to the
+            <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler"/>, while passing all other requests through normally.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.PipeRoutingDelegatingHandler.#ctor(Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler)">
+            <summary>
+            <see cref="T:System.Net.Http.DelegatingHandler"/> that routes urn:botframework:namedpipe requests to the
+            <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.NamedPipeMessageHandler"/>, while passing all other requests through normally.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header">
+            <summary>
+            48-byte wire frame header for the Bot Framework named pipe protocol.
+            Format: {Type}.{Length:6}.{Id:36}.{End}\n
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header.Type">
+            <summary>
+            Gets the payload type code.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header.PayloadLength">
+            <summary>
+            Gets the length of the payload following this header.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header.Id">
+            <summary>
+            Gets the unique identifier for the request/response/stream.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header.End">
+            <summary>
+            Gets a value indicating whether this is the final frame for the given Id.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes">
+            <summary>
+            Payload type codes used in the named pipe protocol header.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes.Request">
+            <summary>Request payload type.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes.Response">
+            <summary>Response payload type.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes.Stream">
+            <summary>Stream data payload type.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes.CancelAll">
+            <summary>Cancel all pending operations.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.PayloadTypes.CancelStream">
+            <summary>Cancel a specific stream.</summary>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.HeaderSerializer">
+            <summary>
+            Serializes and deserializes the 48-byte ASCII header used by the
+            Bot Framework named pipe protocol.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.HeaderSerializer.HeaderSize">
+            <summary>
+            The fixed size (in bytes) of a wire frame header.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.HeaderSerializer.Serialize(Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header,System.Span{System.Byte})">
+            <summary>
+            Serialize a header to its 48-byte ASCII wire representation.
+            </summary>
+            <param name="header">The header to serialize.</param>
+            <param name="buffer">A buffer of at least <see cref="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.HeaderSerializer.HeaderSize"/> bytes.</param>
+            <exception cref="T:System.ArgumentException">Thrown when buffer is too small.</exception>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.HeaderSerializer.Deserialize(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Deserialize a 48-byte ASCII header from the wire.
+            </summary>
+            <param name="buffer">A buffer containing at least <see cref="F:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.HeaderSerializer.HeaderSize"/> bytes.</param>
+            <returns>The deserialized header.</returns>
+            <exception cref="T:System.ArgumentException">Thrown when buffer is too small.</exception>
+            <exception cref="T:System.FormatException">Thrown when the header data is malformed.</exception>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.HeaderSerializer.Serialize(Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.Header)">
+            <summary>
+            Serialize a header to a new byte array.
+            </summary>
+            <param name="header">The header to serialize.</param>
+            <returns>A 48-byte array containing the serialized header.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection">
+            <summary>
+            Manages a named pipe server connection using the Bot Framework convention:
+            <list type="bullet">
+            <item><description>{pipeName}.incoming = server reads (client writes)</description></item>
+            <item><description>{pipeName}.outgoing = server writes (client reads)</description></item>
+            </list>
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection.#ctor(System.String,Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection"/> class.
+            </summary>
+            <param name="pipeName">The base pipe name. Must not be null or empty.</param>
+            <param name="logger">The logger instance.</param>
+            <exception cref="T:System.ArgumentException">Thrown when <paramref name="pipeName"/> is null, empty, or whitespace.</exception>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="logger"/> is null.</exception>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection.Reader">
+            <summary>
+            Gets the reader transport (server reads from this pipe).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection.Writer">
+            <summary>
+            Gets the writer transport (server writes to this pipe).
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection.IsConnected">
+            <summary>
+            Gets a value indicating whether both pipes are connected.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection.WaitForConnectionAsync(System.Threading.CancellationToken)">
+            <summary>
+            Creates the pipe pair and waits for a client to connect to both.
+            </summary>
+            <param name="cancellationToken">A cancellation token.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection.WaitForConnectionAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Creates the pipe pair and waits for a client to connect to both.
+            </summary>
+            <param name="connectionTimeout">The maximum time to wait for both pipe connections.</param>
+            <param name="cancellationToken">A cancellation token.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeConnection.DisposeAsync">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport">
+            <summary>
+            Thin async wrapper over a <see cref="T:System.IO.Pipes.PipeStream"/> for reading and writing byte buffers.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport"/> class.
+            </remarks>
+            <param name="stream">The underlying pipe stream.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="stream"/> is null.</exception>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport.#ctor(System.IO.Pipes.PipeStream)">
+            <summary>
+            Thin async wrapper over a <see cref="T:System.IO.Pipes.PipeStream"/> for reading and writing byte buffers.
+            </summary>
+            <remarks>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport"/> class.
+            </remarks>
+            <param name="stream">The underlying pipe stream.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="stream"/> is null.</exception>
+        </member>
+        <member name="P:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport.IsConnected">
+            <summary>
+            Gets a value indicating whether the pipe is connected.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport.ReadExactAsync(System.Memory{System.Byte},System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Read exactly <paramref name="count"/> bytes into the buffer.
+            Returns false if the pipe disconnects before all bytes are read.
+            </summary>
+            <param name="buffer">The buffer to read into. Must be at least <paramref name="count"/> bytes long.</param>
+            <param name="count">The number of bytes to read. Must be non-negative and not exceed <c>buffer.Length</c>.</param>
+            <param name="cancellationToken">A cancellation token.</param>
+            <returns>True if all bytes were read; false if the pipe disconnected.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when <paramref name="count"/> is negative or greater than <c>buffer.Length</c>.
+            </exception>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport.ReadSingleAsync(System.Memory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Performs a single read operation, returning up to <paramref name="buffer"/> length bytes.
+            Unlike <see cref="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport.ReadExactAsync(System.Memory{System.Byte},System.Int32,System.Threading.CancellationToken)"/>, this does not loop — it returns after one
+            underlying read. May block until data arrives or the pipe disconnects.
+            </summary>
+            <returns>Number of bytes read (0 means pipe disconnected).</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport.WriteAsync(System.ReadOnlyMemory{System.Byte},System.Threading.CancellationToken)">
+            <summary>
+            Write the buffer to the pipe.
+            </summary>
+            <param name="buffer">The data to write.</param>
+            <param name="cancellationToken">A cancellation token.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Hosting.DirectLine.NamedPipes.Transport.NamedPipeTransport.DisposeAsync">
+            <inheritdoc/>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,988 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Agents.Authentication</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Agents.Authentication.AgentClaims">
+            <summary>
+            Provides utility methods for working with claims in the context of Agent authentication.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.IsExchangeableToken(System.IdentityModel.Tokens.Jwt.JwtSecurityToken)">
+            <summary>
+            Determines if a token is exchangeable based on its claims. An exchangeable token is one that is not a user token and has 
+            an audience claim that contains the appId of the token.
+            </summary>
+            <remarks>This is intended for use with tokens issued by the Microsoft identity platform including Azure Bot Token Service.</remarks>
+            <param name="jwtToken">The JWT token to evaluate. Cannot be null.</param>
+            <returns>True if the token is exchangeable; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetAppId(System.IdentityModel.Tokens.Jwt.JwtSecurityToken)">
+            <summary>
+            Gets the appid from the given JWT token. This method checks the 'ver' claim to determine whether to look for the appId in the 
+            'appid' claim (for v1 tokens) or the 'azp' claim (for v2 tokens). If the 'ver' claim is not present, it will first attempt to 
+            find the appId in the 'appid' claim and if not found, it will look in the 'azp' claim. Returns null if no suitable claim is found.
+            </summary>
+            <remarks>This is intended for use with tokens issued by the Microsoft identity platform including Azure Bot Token Service.</remarks>
+            <param name="jwtToken">The JWT token to evaluate. Cannot be null.</param>
+            <returns>The appid or azp value as a string, or null if not found.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetIncomingAudienceClaim(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Retrieves the Audience from the given incoming identity.
+            </summary>
+            <param name="claimsIdentity">The incoming identity containing the token information.</param>
+            <returns>The Audience as a string, or null if not found.</returns>
+            <remarks>
+            For requests the Audience is in the 'aud' claim of the JWT token.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetIncomingAudience(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Retrieves the Audience from the given incoming identity.
+            </summary>
+            <param name="identity">The claims identity containing the token information.</param>
+            <returns>The Audience as a string, or null if not found.</returns>
+            <remarks>
+            For requests the Audience is in the 'aud' claim of the JWT token.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.IsTenantIdIssuerValid(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Determines whether a token's tenant ID claim matches the tenant embedded in its Entra issuer.
+            </summary>
+            <remarks>
+            The comparison applies only to recognized Entra v1 and v2 issuers containing a tenant GUID
+            and only when the token contains a tenant ID claim. Other issuers and tokens without a tenant
+            ID claim are left to the existing issuer and signing-key validation pipeline.
+            </remarks>
+            <param name="identity">The validated claims identity.</param>
+            <returns>
+            <c>false</c> when a present tenant ID differs from the recognized issuer tenant; otherwise,
+            <c>true</c>.
+            </returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetOutgoingAppIdClaim(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Gets the outgoing AppId from an incoming identity.
+            </summary>
+            <remarks>
+            In v1 tokens the AppId is in the <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim"/> claim.
+            In v2 tokens the AppId is in the azp <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AuthorizedParty"/> claim.
+            If the <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.VersionClaim"/> is not present, this method will attempt to
+            obtain the attribute from the <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim"/> or if present.
+            </remarks>
+            <param name="identity">The incoming identity</param>
+            <returns>The value of the appId claim if found (null if it can't find a suitable claim).</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetOutgoingAppId(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Gets the outgoing AppId from an incoming identity.
+            </summary>
+            <remarks>
+            In v1 tokens the AppId is in the <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim"/> claim.
+            In v2 tokens the AppId is in the azp <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AuthorizedParty"/> claim.
+            If the <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.VersionClaim"/> is not present, this method will attempt to
+            obtain the attribute from the <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim"/> or if present.
+            </remarks>
+            <param name="identity">The incoming identity</param>
+            <returns>The value of the appId claim if found (null if it can't find a suitable claim).</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.IsAgentClaim(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Checks if the given incoming identity represents an Agent claim (not coming from ABS/SMBA).
+            </summary>
+            <remarks>
+            An Agent claim should contain:
+                An <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.VersionClaim"/> claim.
+                An <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AudienceClaim"/> claim.
+                An <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim"/> claim (v1) or a <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AuthorizedParty"/> claim (v2).
+            And the appId claim should be different than the audience claim.
+            When a channel (webchat, teams, etc.) invokes an Agent, the <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AudienceClaim"/>
+            is set to <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.BotFrameworkTokenIssuer"/> but when an Agent calls another Agent,
+            the audience claim is set to the appId of the Agent being invoked.
+            The protocol supports v1 and v2 tokens:
+            For v1 tokens, the  <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim"/> is present and set to the app Id of the calling Agent.
+            For v2 tokens, the  <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AuthorizedParty"/> is present and set to the app Id of the calling Agent.
+            </remarks>
+            <param name="identity">The incoming identity to evaluate.</param>
+            <returns>True if the incoming identity represents an Agent claim, false if it does not.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.IsAgent(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Checks if the given incoming identity represents an Agent claim (not coming from ABS/SMBA).
+            </summary>
+            <remarks>
+            An Agent claim should contain:
+                An <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.VersionClaim"/> claim.
+                An <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AudienceClaim"/> claim.
+                An <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim"/> claim (v1) or a <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AuthorizedParty"/> claim (v2).
+            And the appId claim should be different than the audience claim.
+            When a channel (webchat, teams, etc.) invokes an Agent, the <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AudienceClaim"/>
+            is set to <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.BotFrameworkTokenIssuer"/> but when an Agent calls another Agent,
+            the audience claim is set to the appId of the Agent being invoked.
+            The protocol supports v1 and v2 tokens:
+            For v1 tokens, the  <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim"/> is present and set to the app Id of the calling Agent.
+            For v2 tokens, the  <see cref="F:Microsoft.Agents.Authentication.AuthenticationConstants.AuthorizedParty"/> is present and set to the app Id of the calling Agent.
+            </remarks>
+            <param name="identity">The incoming identity to evaluate.</param>
+            <returns>True if the incoming identity represents an Agent claim, false if it does not.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetOutgoingAudienceClaim(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Retrieves the audience for an outgoing token from the given incoming identity.
+            </summary>
+            <param name="identity">The incoming identity containing the token information.</param>
+            <returns>The token audience as a string.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetOutgoingAudience(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Retrieves the audience for an outgoing token from the given incoming identity.
+            </summary>
+            <param name="identity">The incoming identity containing the token information.</param>
+            <returns>The token audience as a string.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.IsGovBotFrameworkClaim(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Determines whether the specified incoming identity represents a government Bot Framework claim.
+            </summary>
+            <remarks>This method checks the audience claim within the provided incoming identity and
+            compares it against the expected government Bot Framework token issuer. Use this method to distinguish
+            government Bot Framework tokens from standard tokens when handling authentication.</remarks>
+            <param name="identity">The incoming identity to evaluate. Cannot be null.</param>
+            <returns>true if the claims identity corresponds to a government Bot Framework claim; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.IsPublicBotFrameworkClaim(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Determines whether the specified incoming identity represents a Bot Framework claim.
+            </summary>
+            <remarks>This method checks the audience claim within the provided incoming identity and
+            compares it against the expected public Bot Framework token issuer. Use this method to distinguish
+            public Bot Framework tokens from government tokens when handling authentication.</remarks>
+            <param name="identity">The incoming identity to evaluate. Cannot be null.</param>
+            <returns>true if the claims identity corresponds to a public Bot Framework claim; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.IsBotFrameworkClaim(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Determines whether the specified incoming identity contains a valid Bot Framework claim.
+            </summary>
+            <remarks>This method checks for both public and government Bot Framework claims to ascertain
+            the validity of the incoming identity.</remarks>
+            <param name="identity">The incoming identity to evaluate for Bot Framework claims. This should represent the user's claims in the
+            context of the Bot Framework.</param>
+            <returns>true if the incoming identity contains a valid Bot Framework claim; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.IsBotFramework(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Determines whether the specified incoming identity represents a Bot Framework user.   
+            </summary>
+            <remarks>This method checks for specific claims that indicate the identity belongs to a Bot
+            Framework user. Use this method to distinguish Bot Framework identities from other types of claims
+            identities.</remarks>
+            <param name="identity">The incoming identity to evaluate for Bot Framework claims. This parameter cannot be null.</param>
+            <returns>true if the incoming identity contains Bot Framework claims; otherwise, false.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetOutgoingTokenScopes(System.Security.Claims.ClaimsIdentity,System.Boolean)">
+            <summary>
+            Retrieves the token scopes from the given incoming identity.
+            </summary>
+            <param name="identity">The incoming identity containing the token information.</param>
+            <param name="defaultABSScopes">Normally the IAccessTokenProvider will use what's in settings.  This is what we want for 
+            Azure Bot Service since that can change for Public vs Gov, etc...  For agent scenarios though, it's always defaulted
+            to "{{appid}}/.default".</param>
+            <returns>A list of token scopes.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.GetOutgoingScopes(System.Security.Claims.ClaimsIdentity,System.Boolean)">
+            <summary>
+            Retrieves the token scopes from the given incoming identity.
+            </summary>
+            <param name="identity">The incoming identity containing the token information.</param>
+            <param name="defaultABSScopes">Normally the IAccessTokenProvider will use what's in settings.  This is what we want for 
+            Azure Bot Service since that can change for Public vs Gov, etc...  For agent scenarios though, it's always defaulted
+            to "{{appid}}/.default".</param>
+            <returns>A list of token scopes.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.DefaultAzureBotServiceScopes(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Returns the default Azure Bot Service scopes based on the incoming identity. If the incoming identity corresponds to a government Bot Framework 
+            claim, it returns the government-specific default scope; otherwise, it returns the standard default scope.
+            </summary>
+            <param name="identity">The incoming identity containing the token information.</param>
+            <returns>A list of token scopes.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.AllowAnonymous(System.Security.Claims.ClaimsIdentity)">
+            <summary>
+            Determines whether anonymous access is allowed based on the given incoming identity.
+            </summary>
+            <param name="identity">The incoming identity to evaluate.</param>
+            <returns>True if anonymous access is allowed, otherwise false.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.AgentClaims.CreateIdentity(System.String,System.Boolean,System.String)">
+            <summary>
+            Creates an ingress Agent ClaimsIdentity.
+            </summary>
+            <param name="audience">The aud of the claim.  Typically the ClientId of the Agent.</param>
+            <param name="anonymous"></param>
+            <param name="appId">The appId of the sender. Not supplying the appId will work correctly against Azure Bot Service, but not to another Agent.</param>
+            <returns></returns>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.AuthenticationConstants">
+            <summary>
+            Values and constants used for authentication and authorization by the activity protocol.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.BotFrameworkScope">
+            <summary>
+            Bot Framework OAuth scope to request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.BotFrameworkAudience">
+            <summary>
+            Bot Framework audience to request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.GovBotFrameworkAudience">
+            <summary>
+            Bot Framework Gov audience to request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ChinaBotFrameworkAudience">
+            <summary>
+            Bot Framework China audience to request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.BotFrameworkDefaultScope">
+            <summary>
+            Bot Framework OAuth scope to request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.GovBotFrameworkDefaultScope">
+            <summary>
+            Bot Framework Gov OAuth scope to request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ChinaBotFrameworkDefaultScope">
+            <summary>
+            Bot Framework China (Gallatin/Mooncake) OAuth scope to request.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.BotFrameworkTokenIssuer">
+            <summary>
+            Token issuer for ABS tokens.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.GovBotFrameworkTokenIssuer">
+            <summary>
+            Token issuer for Gov ABS tokens.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ChinaBotFrameworkTokenIssuer">
+            <summary>
+            Token issuer for China (Gallatin/Mooncake) ABS tokens.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.BotFrameworkLoginUrlTemplate">
+            <summary>
+            Gets the URL template for the Bot Framework login authority, which includes a placeholder for the tenant ID.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.GovBotFrameworkLoginUrlTemplate">
+            <summary>
+            Gets the URL template for the Gov Bot Framework login authority, which includes a placeholder for the tenant ID.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ChinaBotFrameworkLoginUrlTemplate">
+            <summary>
+            Gets the URL template for the China (Gallatin/Mooncake) Bot Framework login authority, which includes a placeholder for the tenant ID.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.BotFrameworkOAuthUrl">
+            <summary>
+            Default Url for the Azure Bot Token Service.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.GovBotFrameworkOAuthUrl">
+            <summary>
+            Default Url for the Gov Azure Bot Token Service.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ChinaBotFrameworkOAuthUrl">
+            <summary>
+            Default Url for the China (Gallatin/Mooncake) Azure Bot Token Service.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.PublicAzureBotServiceOpenIdMetadataUrl">
+            <summary>
+            The OpenID metadata URL for the public Azure Bot Service.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.PublicOpenIdMetadataUrl">
+            <summary>
+            The OpenID metadata URL for public Azure Active Directory.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.EnterpriseChannelOpenIdMetadataUrlFormat">
+            <summary>
+            The OpenID metadata URL format for enterprise channels.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.GovAzureBotServiceOpenIdMetadataUrl">
+            <summary>
+            The OpenID metadata URL for the government Azure Bot Service.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.GovOpenIdMetadataUrl">
+            <summary>
+            The OpenID metadata URL for government Azure Active Directory.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ChinaAzureBotServiceOpenIdMetadataUrl">
+            <summary>
+            The OpenID metadata URL for the China (Gallatin/Mooncake) Azure Bot Service.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ChinaOpenIdMetadataUrl">
+            <summary>
+            The OpenID metadata URL for China (Gallatin/Mooncake)
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ValidTokenIssuerUrlTemplateV1">
+            <summary>
+            The V1 Azure AD token issuer URL template that will contain the tenant id where the token was issued from.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ValidTokenIssuerUrlTemplateV2">
+            <summary>
+            The V2 Azure AD token issuer URL template that will contain the tenant id where the token was issued from.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ValidGovernmentTokenIssuerUrlTemplateV2">
+            <summary>
+            The Government V2 Azure AD token issuer URL template that will contain the tenant id where the token was issued from.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.ValidChinaTokenIssuerUrlTemplateV2">
+            <summary>
+            The China (Gallatin/Mooncake) V2 Azure AD token issuer URL template that will contain the tenant id where the token was issued from.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.AuthorizedParty">
+            <summary>
+            "azp" Claim.
+            </summary>
+            <remarks>
+            Authorized party - the party to which the ID Token was issued.
+            This claim follows the general format set forth in the OpenID Spec. http://openid.net/specs/openid-connect-core-1_0.html#IDToken.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.AudienceClaim">
+            <summary>
+            Audience Claim. 
+            </summary>
+            <remarks>
+            The "aud" (audience) claim identifies the recipients that the JWT is
+            intended for. Each principal intended to process the JWT MUST
+            identify itself with a value in the audience claim. If the principal
+            processing the claim does not identify itself with a value in the
+            "aud" claim when this claim is present, then the JWT MUST be
+            rejected. In the general case, the "aud" value is an array of case-
+            sensitive strings, each containing a StringOrURI value. In the
+            special case when the JWT has one audience, the "aud" value MAY be a
+            single case-sensitive string containing a StringOrURI value. The
+            interpretation of audience values is generally application specific.
+            Use of this claim is OPTIONAL.
+            
+            For more details, see <a href="https://tools.ietf.org/html/rfc7519#section-4.1.3">RFC 7519 Section 4.1.3</a>.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.IssuerClaim">
+            <summary>
+            Token iss claim name. As used in Microsoft AAD tokens.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.VersionClaim">
+            <summary>
+            Token version claim name. As used in Microsoft AAD tokens.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.AppIdClaim">
+            <summary>
+            App ID claim name. As used in Microsoft AAD 1.0 tokens.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.AzpClaim">
+            <summary>
+            App ID claim name. As used in Microsoft AAD 2.0 tokens.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.AuthenticationConstants.TenantIdClaim">
+            <summary>
+            Tenant Id claim name. As used in Microsoft AAD tokens.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.ConfigurationConnections">
+            <summary>
+            A IConfiguration based IConnections.
+            </summary>
+            <code>
+            "Connections": {
+              "ServiceConnection": {
+                "Settings": {
+                }
+            },
+            "ConnectionsMap": [
+             { 
+               "ServiceUrl": "*",
+               "Connection": "ServiceConnection"
+            }
+            </code>
+            <remarks>
+            The type indicated must have the constructor:<c>(IServiceProvider systemServiceProvider, IConfigurationSection configurationSection)</c>.
+            The 'configurationSection' argument is the 'Settings' portion of the connection.
+            
+            If 'ConnectionsMap' is not specified, the first Connection is used as the default.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.ConfigurationConnections.GetConnection(System.String)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.ConfigurationConnections.TryGetConnection(System.String,Microsoft.Agents.Authentication.IAccessTokenProvider@)">
+            <summary>
+            Tries to get a connection by name. 
+            </summary>
+            <param name="name">Name of the connection.</param>
+            <param name="connection">Access token provider for the named connection.</param>
+            <returns>Returns <c>true</c> if successful; otherwise <c>false</c>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.ConfigurationConnections.GetDefaultConnection">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.ConfigurationConnections.GetTokenProvider(System.Security.Claims.ClaimsIdentity,Microsoft.Agents.Core.Models.IActivity)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.ConfigurationConnections.GetTokenProvider(System.Security.Claims.ClaimsIdentity,System.String)">
+            <summary>
+            Finds a connection based on a map.
+            </summary>
+            <code>
+            "ConnectionsMap":
+            [
+               {
+                  "ServiceUrl": "http://*..botframework.com/*.",
+                  "Audience": optional,
+                  "Connection": "ServiceConnection"
+               }
+            ]
+            </code>
+            <remarks>
+            ServiceUrl is:  A regex to match with, or "*" for any serviceUrl value.
+            Connection is: A name in the 'Connections'.
+            </remarks>        
+            <param name="claimsIdentity"></param>
+            <param name="serviceUrl"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.ConnectionSettingsBase">
+            <summary>
+            Describes the connection settings for a given connection.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ConnectionSettingsBase.ClientId">
+            <summary>
+            Client ID to use for the connection. 
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ConnectionSettingsBase.Authority">
+            <summary>
+            Login authority to use for the connection
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ConnectionSettingsBase.TenantId">
+            <summary>
+            Tenant Id for creating the authentication for the connection 
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ConnectionSettingsBase.Scopes">
+            <summary>
+            List of scopes to use for the connection.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ConnectionSettingsBase.AlternateBlueprintConnectionName">
+            <summary>
+            Alternate Agentic Blueprint connection
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.DelegatedTokenCredentialExtension">
+            <summary>
+            Creates Azure credentials backed by an asynchronous Agents SDK token provider.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.DelegatedTokenCredentialExtension.Create(System.Func{System.String[],System.Threading.CancellationToken,System.Threading.Tasks.Task{Microsoft.Agents.Core.Models.TokenResponse}})">
+            <summary>
+            Creates a credential that forwards token requests to <paramref name="provider"/>.
+            </summary>
+            <param name="provider">The asynchronous provider used to acquire a token for the requested scopes.</param>
+            <returns>A credential backed by the supplied provider.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Errors.ErrorHelper">
+            <summary>
+            Error helper for the Authentication core system
+            This is used to setup the localized error codes for the authentication subsystem of the AgentSDK
+            
+            Note: specific auth providers are expected to implement their own error codes inside their own libraries. 
+            
+            Each Error should be created as an AgentAuthErrorDefinition and added to the ErrorHelper class
+            Each definition should include an error code as a - from the base error code, a description sorted in the Resource.resx file to support localization, and a help link pointing to an AKA link to get help for the given error. 
+            
+            when used, there are 2 methods.. 
+            Method 1: 
+                throw new IndexOutOfRangeException(ErrorHelper.MissingAuthenticationConfiguration.description)
+                {
+                    HResult = ErrorHelper.MissingAuthenticationConfiguration.code,
+                    HelpLink = ErrorHelper.MissingAuthenticationConfiguration.helplink
+                };
+            
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IAccessTokenProvider.GetAccessTokenAsync(System.String,System.Collections.Generic.IList{System.String},System.Boolean)">
+            <summary>
+            Used by Agents SDK to acquire access tokens for connection to agent services or clients.
+            </summary>
+            <param name="forceRefresh">True to force a refresh of the token; or false to get the token only if it is necessary.</param>
+            <param name="scopes">The scopes for which to get the token.</param>
+            <param name="resourceUrl">The resource URL for which to get the token.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IAccessTokenProvider.GetTokenCredential">
+            <summary>
+            Returns an Azure TokenCredential using this provider.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.IAgenticTokenProvider">
+            <summary>
+            Provides access tokens for the agentic identity chain used by Agent 365 / Agent ID scenarios.
+            </summary>
+            <remarks>
+            <para>
+            Agentic identity is a layered model in which each token in the chain is used to acquire the next:
+            </para>
+            <list type="number">
+              <item>
+                <description>
+                <b>Application (blueprint)</b> — a token-exchange credential bound to the agent application
+                instance (the federated managed identity). Acquired via
+                <see cref="M:Microsoft.Agents.Authentication.IAgenticTokenProvider.GetAgenticApplicationTokenAsync(System.String,System.String,System.Threading.CancellationToken)"/>.
+                </description>
+              </item>
+              <item>
+                <description>
+                <b>Instance</b> — an autonomous-agent token, obtained by exchanging the application token.
+                Acquired via <see cref="M:Microsoft.Agents.Authentication.IAgenticTokenProvider.GetAgenticInstanceTokenAsync(System.String,System.String,System.Threading.CancellationToken)"/> or
+                its scoped overload.
+                </description>
+              </item>
+              <item>
+                <description>
+                <b>Agentic user</b> — a token that represents the agent acting on behalf of a specific agentic
+                user. Acquired via <see cref="M:Microsoft.Agents.Authentication.IAgenticTokenProvider.GetAgenticUserTokenAsync(System.String,System.String,System.String,System.Collections.Generic.IList{System.String},System.Threading.CancellationToken)"/>.
+                </description>
+              </item>
+            </list>
+            <para>
+            Implementations resolve this chain differently. The MSAL-based provider performs each exchange
+            locally (using <c>api://AzureAdTokenExchange/.default</c> and federated managed identity / FMI
+            paths), while the Entra Auth Sidecar provider delegates the full chain to an external sidecar
+            process that owns the agent credential. A connection-level token provider exposes this interface
+            when it supports agentic flows; callers typically obtain it through <c>AgenticAuthorization</c>.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IAgenticTokenProvider.GetAgenticApplicationTokenAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Acquires the agentic <b>application (blueprint)</b> token for the specified agent application
+            instance. This is a token-exchange-scoped token bound to the agent instance via federated
+            managed identity, and forms the root of the agentic identity chain.
+            </summary>
+            <param name="tenantId">The Entra tenant id the agent identity belongs to.</param>
+            <param name="agentAppInstanceId">
+            The agent application instance id (the client id of the agent identity / FMI path).
+            </param>
+            <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+            <returns>A task that resolves to the application-level access token.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IAgenticTokenProvider.GetAgenticInstanceTokenAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Acquires the agentic <b>instance</b> (autonomous-agent) token for the specified agent
+            application instance using the provider's default scope.
+            </summary>
+            <param name="tenantId">The Entra tenant id the agent identity belongs to.</param>
+            <param name="agentAppInstanceId">The agent application instance id (the client id of the agent identity).</param>
+            <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+            <returns>A task that resolves to the instance-level access token.</returns>
+            <remarks>
+            The provider performs the application → instance exchange internally, so the caller only needs
+            to supply the tenant and instance id.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IAgenticTokenProvider.GetAgenticInstanceTokenAsync(System.String,System.String,System.Collections.Generic.IList{System.String},System.Threading.CancellationToken)">
+            <summary>
+            Acquires the agentic <b>instance</b> (autonomous-agent) token for the specified agent
+            application instance and the requested scopes.
+            </summary>
+            <param name="tenantId">The Entra tenant id the agent identity belongs to.</param>
+            <param name="agentAppInstanceId">The agent application instance id (the client id of the agent identity).</param>
+            <param name="scopes">
+            The scopes to request for the resource the instance token targets. When <see langword="null"/>
+            or empty, the provider falls back to its configured default scope.
+            </param>
+            <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+            <returns>A task that resolves to the instance-level access token for the requested scopes.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IAgenticTokenProvider.GetAgenticUserTokenAsync(System.String,System.String,System.String,System.Collections.Generic.IList{System.String},System.Threading.CancellationToken)">
+            <summary>
+            Acquires an agentic <b>user</b> token that represents the agent acting on behalf of a specific
+            agentic user for the requested scopes.
+            </summary>
+            <param name="tenantId">The Entra tenant id the agent identity and user belong to.</param>
+            <param name="agentAppInstanceId">The agent application instance id (the client id of the agent identity).</param>
+            <param name="upn">
+            The agentic user to act on behalf of. This may be the user's UPN (user principal name) or the
+            user's object id (a GUID); implementations select the appropriate identifier based on the value.
+            </param>
+            <param name="scopes">
+            The scopes to request for the resource the user token targets. When <see langword="null"/> or
+            empty, the provider falls back to its configured default scope.
+            </param>
+            <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+            <returns>A task that resolves to the access token for the agentic user.</returns>
+            <remarks>
+            The provider performs the full application → instance → agentic-user chain internally.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.ICertificateProvider">
+            <summary>
+            Defines a provider for retrieving X.509 certificates.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.ICertificateProvider.GetCertificate">
+            <summary>
+            Gets an <see cref="T:System.Security.Cryptography.X509Certificates.X509Certificate2"/> instance.
+            </summary>
+            <returns>
+            An X.509 certificate.
+            </returns>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.IConnections">
+            <summary>
+            Provides access to the token access connections.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IConnections.GetConnection(System.String)">
+            <summary>
+            Gets a connection by name.
+            </summary>
+            <param name="name"></param>
+            <returns>IAccessTokenProvider</returns>
+            <exception cref="T:System.IndexOutOfRangeException">Named connection not found.</exception>
+            <exception cref="T:System.ArgumentException">Connection name null or empty.</exception>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IConnections.GetDefaultConnection">
+            <summary>
+            Gets the default connection.
+            </summary>
+            <returns>IAccessTokenProvider</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IConnections.GetTokenProvider(System.Security.Claims.ClaimsIdentity,System.String)">
+            <summary>
+            Finds a connection based on a map.
+            </summary>
+            <param name="claimsIdentity"></param>
+            <param name="serviceUrl">Typically Activity.ServiceUrl value</param>
+            <returns></returns>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.IConnections.GetTokenProvider(System.Security.Claims.ClaimsIdentity,Microsoft.Agents.Core.Models.IActivity)">
+            <summary>
+            Finds a connection based on a map based on Activity.
+            </summary>
+            <param name="claimsIdentity"></param>
+            <param name="activity"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.IConnectionSettings.Authority">
+            <summary>
+            Entra Authentication Endpoint to use.  If not populated, the Entra Public Cloud endpoint is assumed. 
+            This example of Public Cloud Endpoint is https://login.microsoftonline.com
+            </summary>
+            <seealso cref="T:System.Uri" href="https://learn.microsoft.com/entra/identity-platform/authentication-national-cloud"/>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.IConnectionSettings.ClientId">
+            <summary>
+            Client/Application ID to use.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.IConnectionSettings.Scopes">
+            <summary>
+            Default scopes list to supply.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.IConnectionSettings.TenantId">
+            <summary>
+            Tenant ID of endpoint to use when acquiring an access token.
+            If not supplied, "common" is used. 
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.ImmutableConnectionSettings">
+            <summary>
+            Describes the connection settings for a given connection.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.ImmutableConnectionSettings.#ctor(Microsoft.Agents.Authentication.ConnectionSettingsBase)">
+            <summary>
+            Describes the connection settings for a given connection.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ImmutableConnectionSettings.ClientId">
+            <summary>
+            Client ID to use for the connection. 
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ImmutableConnectionSettings.Authority">
+            <summary>
+            Login authority to use for the connection
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ImmutableConnectionSettings.TenantId">
+            <summary>
+            Tenant Id for creating the authentication for the connection 
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ImmutableConnectionSettings.Scopes">
+            <summary>
+            List of scopes to use for the connection.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.ImmutableConnectionSettings.AlternateBlueprintConnectionName">
+            <summary>
+            Alternate Agentic Blueprint connection
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.IOBOExchange">
+            <summary>
+            Optional interface for a token provider that support OBO token exchanges.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Error_AuthModuleNotFound">
+            <summary>
+              Looks up a localized string similar to Type &apos;{0}&apos; not found in Assembly &apos;{1}&apos; or is the wrong type for &apos;{2}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Error_ConfigurationSectionNotFound">
+            <summary>
+              Looks up a localized string similar to Authentication configuration section &apos;{0}&apos; not Found..
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Error_ConfigurationSectionNotProvided">
+            <summary>
+              Looks up a localized string similar to No configuration section provided. An authentication configuration section is required to create a connection settings object..
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Error_ConnectionNotFoundByName">
+            <summary>
+              Looks up a localized string similar to Connection &apos;{0}&apos; not found in configuration.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Error_FailedToCreateAuthModuleProvider">
+            <summary>
+              Looks up a localized string similar to Failed to create authentication provider for connection name &apos;{0}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Error_InvalidAuthProviderConstructor">
+            <summary>
+              Looks up a localized string similar to Type &apos;{0},{1}&apos; does not have the required constructor..
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Error_MissingAuthenticationConfig">
+            <summary>
+              Looks up a localized string similar to No connections found in for this Agent in the Connections Configuration.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Authentication.Properties.Resources.Error_NullTokenResponse">
+            <summary>
+              Looks up a localized string similar to The token response provider returned a null response or a response without a token..
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Telemetry.Constants">
+            <summary>
+            Defines the <see cref="T:System.Diagnostics.Activity"/> and metric names used by the authentication telemetry scopes.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.ScopeGetAccessToken">
+            <summary>Activity name for a generic access-token acquisition.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.ScopeAcquireTokenOnBehalfOf">
+            <summary>Activity name for an On-Behalf-Of token acquisition.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.ScopeGetAgenticInstanceToken">
+            <summary>Activity name for acquiring an agentic instance token.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.ScopeGetAgenticUserToken">
+            <summary>Activity name for acquiring an agentic user token.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.MetricTokenRequestDuration">
+            <summary>Metric name for the histogram that records token-request duration in milliseconds.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.MetricTokenRequestCount">
+            <summary>Metric name for the counter of token requests made to the authentication service.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.AuthMethodOBO">
+            <summary>Auth-method label used when acquiring a token via On-Behalf-Of flow.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.AuthMethodAgenticInstance">
+            <summary>Auth-method label used when acquiring an agentic instance token.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Constants.AuthMethodAgenticUser">
+            <summary>Auth-method label used when acquiring an agentic user token.</summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Telemetry.Metrics">
+            <summary>
+            Exposes the metric instruments used by the authentication telemetry
+            scopes to record token-request statistics.
+            </summary>
+            <remarks>
+            All instruments are created from <see cref="F:Microsoft.Agents.Core.Telemetry.AgentsTelemetry.Meter"/> so they share
+            the same source name and version as the rest of the Agents SDK telemetry.
+            </remarks>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Metrics.TokenRequestCount">
+            <summary>
+            Counts the total number of token requests made to the authentication service.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Authentication.Telemetry.Metrics.TokenRequestDuration">
+            <summary>
+            Records the duration, in milliseconds, of each token request to the authentication service.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeAcquireTokenOnBehalfOf">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeTokenRequest"/> that traces an On-Behalf-Of token acquisition
+            and records the requested scopes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeAcquireTokenOnBehalfOf.#ctor(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeAcquireTokenOnBehalfOf"/> class.
+            </summary>
+            <param name="scopes">The OAuth/OIDC scopes requested for the On-Behalf-Of token.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeAcquireTokenOnBehalfOf.Callback(System.Diagnostics.Activity,System.Double,System.Exception)">
+            <inheritdoc />
+            <remarks>
+            Calls <c>base.Callback</c> to record the auth method, then tags the activity with
+            <see cref="F:Microsoft.Agents.Core.Telemetry.TagNames.AuthScopes"/>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAccessToken">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeTokenRequest"/> that traces a generic access-token acquisition
+            and records the requested scopes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAccessToken.#ctor(System.Collections.Generic.IEnumerable{System.String},System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAccessToken"/> class.
+            </summary>
+            <param name="scopes">The OAuth/OIDC scopes requested for the token.</param>
+            <param name="authMethod">The authentication method label to record.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAccessToken.Callback(System.Diagnostics.Activity,System.Double,System.Exception)">
+            <inheritdoc />
+            <remarks>
+            Calls <c>base.Callback</c> to record the auth method, then tags the activity with
+            <see cref="F:Microsoft.Agents.Core.Telemetry.TagNames.AuthScopes"/>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAgenticInstanceToken">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeTokenRequest"/> that traces the acquisition of an agentic instance
+            token and records the agentic instance identifier.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAgenticInstanceToken.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAgenticInstanceToken"/> class.
+            </summary>
+            <param name="agenticInstanceId">The identifier of the agentic application instance.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAgenticInstanceToken.Callback(System.Diagnostics.Activity,System.Double,System.Exception)">
+            <inheritdoc />
+            <remarks>
+            Calls <c>base.Callback</c> to record the auth method, then tags the activity with
+            <see cref="F:Microsoft.Agents.Core.Telemetry.TagNames.AgenticInstanceId"/>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAgenticUserToken">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeTokenRequest"/> that traces the acquisition of an agentic user
+            token and records the agentic instance identifier, user identifier, and requested scopes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAgenticUserToken.#ctor(System.String,System.String,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAgenticUserToken"/> class.
+            </summary>
+            <param name="agenticInstanceId">The identifier of the agentic application instance.</param>
+            <param name="agenticUserId">The identifier of the agentic user.</param>
+            <param name="scopes">The OAuth/OIDC scopes requested for the token, or <c>null</c>.</param>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeGetAgenticUserToken.Callback(System.Diagnostics.Activity,System.Double,System.Exception)">
+            <inheritdoc />
+            <remarks>
+            Calls <c>base.Callback</c> to record the auth method, then tags the activity with
+            <see cref="F:Microsoft.Agents.Core.Telemetry.TagNames.AgenticInstanceId"/>, <see cref="F:Microsoft.Agents.Core.Telemetry.TagNames.AgenticUserId"/>,
+            and <see cref="F:Microsoft.Agents.Core.Telemetry.TagNames.AuthScopes"/>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeTokenRequest">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Core.Telemetry.TelemetryScope"/> that traces a token-request operation and tags
+            the <see cref="T:System.Diagnostics.Activity"/> with the authentication method used.
+            </summary>
+            <remarks>
+            Derived classes can override <see cref="M:Microsoft.Agents.Core.Telemetry.TelemetryScope.Callback(System.Diagnostics.Activity,System.Double,System.Exception)"/> to add further
+            tags (e.g., scopes or instance identifiers) after calling <c>base.Callback</c>.
+            </remarks>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeTokenRequest.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeTokenRequest"/> class.
+            </summary>
+            <param name="scopeName">The name for the underlying <see cref="T:System.Diagnostics.Activity"/>.</param>
+            <param name="authMethod">
+            The authentication method label to record (e.g., <see cref="F:Microsoft.Agents.Authentication.Telemetry.Constants.AuthMethodOBO"/>).
+            </param>
+        </member>
+        <member name="M:Microsoft.Agents.Authentication.Telemetry.Scopes.ScopeTokenRequest.Callback(System.Diagnostics.Activity,System.Double,System.Exception)">
+            <inheritdoc />
+            <remarks>
+            Tags the activity with <see cref="F:Microsoft.Agents.Core.Telemetry.TagNames.AuthMethod"/>.
+            </remarks>
+        </member>
+    </members>
+</doc>

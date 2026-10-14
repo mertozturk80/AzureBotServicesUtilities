@@ -1,0 +1,1433 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Microsoft.Agents.Connector</name>
+    </assembly>
+    <members>
+        <member name="T:Microsoft.Agents.Connector.Errors.ErrorHelper">
+             <summary>
+             Error helper for the Agent SDK core system
+             This is used to setup the localized error codes for the AgentSDK
+             
+             Each Error should be created as as an AgentAuthErrorDefinition and added to the ErrorHelper class
+             Each definition should include an error code as a - from the base error code, a description sorted in the Resource.resx file to support localization, and a help link pointing to an AKA link to get help for the given error. 
+             
+             
+             when used, there are is 2 methods in used in the general space. 
+             Method 1: 
+             Throw a new exception with the error code, description and helplink
+                 throw new IndexOutOfRangeException(ErrorHelper.MissingAuthenticationConfiguration.description)
+                 {
+                     HResult = ErrorHelper.MissingAuthenticationConfiguration.code,
+                     HelpLink = ErrorHelper.MissingAuthenticationConfiguration.helplink
+                 };
+            
+             Method 2: 
+             
+                 throw Microsoft.Agents.Core.Errors.ExceptionHelper.GenerateException&lt;OperationCanceledException&gt;(
+                     ErrorHelper.NullIAccessTokenProvider, ex, $"{AgentClaims.GetAppId(claimsIdentity)}:{serviceUrl}");
+             
+             </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.IAttachments">
+            <summary>
+            Attachments operations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IAttachments.GetAttachmentUri(System.String,System.String)">
+            <summary>
+            Get the URI of an attachment view.
+            </summary>
+            <param name="attachmentId">id of the attachment.</param>
+            <param name="viewId">default is "original".</param>
+            <returns>uri.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IAttachments.GetAttachmentInfoAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Get AttachmentInfo structure describing the attachment views.
+            </summary>
+            <param name='attachmentId'>
+            attachment id.
+            </param>
+            <param name='cancellationToken'>
+            The cancellation token.
+            </param>
+            <returns>A task that represents the work queued to execute.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IAttachments.GetAttachmentAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Get the named view as binary content.
+            </summary>
+            <param name='attachmentId'>
+            attachment id.
+            </param>
+            <param name='viewId'>
+            View id from attachmentInfo.
+            </param>
+            <param name='cancellationToken'>
+            The cancellation token.
+            </param>
+            <returns>A task that represents the work queued to execute.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.IConnectorClient">
+            <summary>
+            The Connector API allows communicating back to the incoming request.  Typically to the Activity.ServiceUrl property.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.IConnectorClient.BaseUri">
+            <summary>
+            Gets or sets the base URI of the service.
+            </summary>
+            <value>The base URI.</value>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.IConnectorClient.Attachments">
+            <summary>
+            Gets the IAttachments.</summary>
+            <value>See <see cref="T:Microsoft.Agents.Connector.IAttachments" /> class.</value>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.IConnectorClient.Conversations">
+            <summary> Gets the IConversations.</summary>
+            <value>See <see cref="T:Microsoft.Agents.Connector.IConversations" /> class.</value>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.IConversations">
+            <summary>
+            ChannelAPI Conversations operations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.GetConversationsAsync(System.String,System.Threading.CancellationToken)">
+             <summary>
+             GetConversations.
+             </summary>
+             <remarks>
+             List the Conversations in which this Agent has participated.
+            
+             GET from this method with a skip token
+            
+             The return value is a ConversationsResult, which contains an array
+             of ConversationMembers and a skip token.  If the skip token is not
+             empty, then
+             there are further values to be returned. Call this method again
+             with the returned token to get more values.
+            
+             Each ConversationMembers object contains the ID of the conversation
+             and an array of ChannelAccounts that describe the members of the
+             conversation.
+             </remarks>
+             <param name='continuationToken'>
+             skip or continuation token.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.CreateConversationAsync(Microsoft.Agents.Core.Models.ConversationParameters,System.Threading.CancellationToken)">
+             <summary>
+             CreateConversation.
+             </summary>
+             <remarks>
+             Create a new Conversation.
+            
+             POST to this method with a
+             * Agent being the Agent creating the conversation
+             * IsGroup set to true if this is not a direct message (default is
+             false)
+             * Array containing the members to include in the conversation
+            
+             The return value is a ResourceResponse which contains a
+             conversation id which is suitable for use
+             in the message payload and REST API uris.
+            
+             Most channels only support the semantics of Agents initiating a
+             direct message conversation.  An example of how to do that would
+             be:
+            
+             ```
+             var resource = await connector.conversations.CreateConversation(new
+             ConversationParameters(){ Agent = agent, members = new ChannelAccount[]
+             { new ChannelAccount("user1") } );
+             await connect.Conversations.SendToConversationAsync(resource.Id,
+             new Activity() ... ) ;
+            
+             ``` .
+             </remarks>
+             <param name='parameters'>
+             Parameters to create the conversation from.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.SendToConversationAsync(Microsoft.Agents.Core.Models.IActivity,System.Threading.CancellationToken)">
+             <summary>
+             SendToConversation.
+             </summary>
+             <remarks>
+             This method allows you to send an activity to the end of a
+             conversation.
+            
+             This is slightly different from ReplyToActivity().
+             * SendToConversation(conversationId) - will append the activity to
+             the end of the conversation according to the timestamp or semantics
+             of the channel.
+             * ReplyToActivity(conversationId,ActivityId) - adds the activity as
+             a reply to another activity, if the channel supports it. If the
+             channel does not support nested replies, ReplyToActivity falls back
+             to SendToConversation.
+            
+             Use ReplyToActivity when replying to a specific activity in the
+             conversation.
+            
+             Use SendToConversation in all other cases.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='activity'>
+             Activity to send.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+             <returns>A task that represents the <see cref="T:Microsoft.Agents.Core.Models.ResourceResponse"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.SendConversationHistoryAsync(System.String,Microsoft.Agents.Core.Models.Transcript,System.Threading.CancellationToken)">
+             <summary>
+             SendConversationHistory.
+             </summary>
+             <remarks>
+             This method allows you to upload the historic activities to the
+             conversation.
+            
+             Sender must ensure that the historic activities have unique ids and
+             appropriate timestamps. The ids are used by the client to deal with
+             duplicate activities and the timestamps are used by the client to
+             render the activities in the right order.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='transcript'>
+             Transcript of activities.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+             <returns>A task that represents the <see cref="T:Microsoft.Agents.Core.Models.ResourceResponse"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.UpdateActivityAsync(Microsoft.Agents.Core.Models.IActivity,System.Threading.CancellationToken)">
+             <summary>
+             UpdateActivity.
+             </summary>
+             <remarks>
+             Edit an existing activity.
+            
+             Some channels allow you to edit an existing activity to reflect the
+             new state of an Agent conversation.
+            
+             For example, you can remove buttons after someone has clicked
+             "Approve" button.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='activityId'>
+             activityId to update.
+             </param>
+             <param name='activity'>
+             replacement Activity.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+             <returns>A task that represents the <see cref="T:Microsoft.Agents.Core.Models.ResourceResponse"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.ReplyToActivityAsync(Microsoft.Agents.Core.Models.IActivity,System.Threading.CancellationToken)">
+             <summary>
+             ReplyToActivity.
+             </summary>
+             <remarks>
+             This method allows you to reply to an activity.
+            
+             This is slightly different from SendToConversation().
+             * SendToConversation(conversationId) - will append the activity to
+             the end of the conversation according to the timestamp or semantics
+             of the channel.
+             * ReplyToActivity(conversationId,ActivityId) - adds the activity as
+             a reply to another activity, if the channel supports it. If the
+             channel does not support nested replies, ReplyToActivity falls back
+             to SendToConversation.
+            
+             Use ReplyToActivity when replying to a specific activity in the
+             conversation.
+            
+             Use SendToConversation in all other cases.
+             </remarks>
+             <param name='activity'>
+             Activity to send.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.DeleteActivityAsync(System.String,System.String,System.Threading.CancellationToken)">
+             <summary>
+             DeleteActivity.
+             </summary>
+             <remarks>
+             Delete an existing activity.
+            
+             Some channels allow you to delete an existing activity, and if
+             successful this method will remove the specified activity.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='activityId'>
+             activityId to delete.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.GetConversationMembersAsync(System.String,System.Threading.CancellationToken)">
+             <summary>
+             GetConversationMembers.
+             </summary>
+             <remarks>
+             Enumerate the members of a conversation.
+            
+             This REST API takes a ConversationId and returns an array of
+             ChannelAccount objects representing the members of the
+             conversation.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+             <returns>A task that represents the <see cref="T:Microsoft.Agents.Core.Models.ChannelAccount"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.GetConversationMemberAsync(System.String,System.String,System.Threading.CancellationToken)">
+             <summary>
+             GetConversationMember.
+             </summary>
+             <remarks>
+             Enumerate the members of a conversation.
+            
+             This REST API takes a ConversationId and a UserId and returns a ChannelAccount
+             object for the members of the conversation.
+             </remarks>
+             <param name='operations'>
+             The operations group for this extension method.
+             </param>
+             <param name='userId'>
+             User ID.
+             </param>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+             <returns>The conversation member.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.GetConversationPagedMembersAsync(System.String,System.Nullable{System.Int32},System.String,System.Threading.CancellationToken)">
+             <summary>
+             GetConversationPagedMembers.
+             </summary>
+             <remarks>
+             Enumerate the members of a conversation one page at a time.
+            
+             This REST API takes a ConversationId. Optionally a pageSize and/or
+             continuationToken can be provided. It returns a PagedMembersResult,
+             which contains an array
+             of ChannelAccounts representing the members of the conversation and
+             a continuation token that can be used to get more values.
+            
+             One page of ChannelAccounts records are returned with each call.
+             The number of records in a page may vary between channels and
+             calls. The pageSize parameter can be used as
+             a suggestion. If there are no additional results the response will
+             not contain a continuation token. If there are no members in the
+             conversation the Members will be empty or not present in the
+             response.
+            
+             A response to a request that has a continuation token from a prior
+             request may rarely return members from a previous request.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='pageSize'>
+             Suggested page size.
+             </param>
+             <param name='continuationToken'>
+             Continuation Token.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+             <returns>A task that represents the <see cref="T:Microsoft.Agents.Connector.Types.PagedMembersResult"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.DeleteConversationMemberAsync(System.String,System.String,System.Threading.CancellationToken)">
+             <summary>
+             DeleteConversationMember.
+             </summary>
+             <remarks>
+             Deletes a member from a conversation.
+            
+             This REST API takes a ConversationId and a memberId (of type
+             string) and removes that member from the conversation. If that
+             member was the last member
+             of the conversation, the conversation will also be deleted.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='memberId'>
+             ID of the member to delete from this conversation.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.GetActivityMembersAsync(System.String,System.String,System.Threading.CancellationToken)">
+             <summary>
+             GetActivityMembers.
+             </summary>
+             <remarks>
+             Enumerate the members of an activity.
+            
+             This REST API takes a ConversationId and a ActivityId, returning an
+             array of ChannelAccount objects representing the members of the
+             particular activity in the conversation.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='activityId'>
+             Activity ID.
+             </param>
+             <param name='customHeaders'>
+             The headers that will be added to request.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+             <returns>A task that represents the list of <see cref="T:Microsoft.Agents.Core.Models.ChannelAccount"/>.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IConversations.UploadAttachmentAsync(System.String,Microsoft.Agents.Connector.Types.AttachmentData,System.Threading.CancellationToken)">
+             <summary>
+             UploadAttachment.
+             </summary>
+             <remarks>
+             Upload an attachment directly into a channel's storage.
+            
+             This is useful because it allows you to store data in a compliant
+             store when dealing with enterprises.
+            
+             The response is a ResourceResponse which contains an AttachmentId
+             which is suitable for using with the attachments API.
+             </remarks>
+             <param name='conversationId'>
+             Conversation ID.
+             </param>
+             <param name='attachmentUpload'>
+             Attachment data.
+             </param>
+             <param name='cancellationToken'>
+             The cancellation token.
+             </param>
+             <returns>A task that represents the <see cref="T:Microsoft.Agents.Core.Models.ResourceResponse"/>.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.IRestTransport">
+            <summary>
+            Defines the contract for REST transport operations.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.IRestTransport.Endpoint">
+            <summary>
+            Gets the base endpoint URI for REST operations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IRestTransport.GetHttpClientAsync">
+            <summary>
+            Gets an HTTP client configured for this transport.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.IUserTokenClient">
+            <summary>
+            Client for OAuth token exchange.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IUserTokenClient.GetUserTokenAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Attempts to retrieve the token for a user that's in a login flow.
+            </summary>
+            <param name="userId">The user id that will be associated with the token.</param>
+            <param name="connectionName">Name of the auth connection to use.</param>
+            <param name="channelId">The channel Id that will be associated with the token.</param>
+            <param name="magicCode">(Optional) Optional user entered code to validate.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Token Response.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IUserTokenClient.GetSignInResourceAsync(System.String,Microsoft.Agents.Core.Models.IActivity,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Get the raw signin link to be sent to the user for signin for a connection name.
+            </summary>
+            <param name="connectionName">Name of the auth connection to use.</param>
+            <param name="activity">The <see cref="T:Microsoft.Agents.Core.Models.Activity"/> from which to derive the token exchange state.</param>
+            <param name="finalRedirect">The final URL that the OAuth flow will redirect to.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> representing the result of the asynchronous operation.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IUserTokenClient.SignOutUserAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.Threading.CancellationToken)">
+            <summary>
+            Signs the user out with the token server.
+            </summary>
+            <param name="userId">The user id that will be associated with the token.</param>
+            <param name="connectionName">Name of the auth connection to use.</param>
+            <param name="channelId">The channel Id that will be associated with the token.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> representing the result of the asynchronous operation.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IUserTokenClient.GetTokenStatusAsync(System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves the token status for each configured connection for the given user.
+            </summary>
+            <param name="userId">The user id that will be associated with the token.</param>
+            <param name="channelId">The channel Id that will be associated with the token.</param>
+            <param name="includeFilter">The includeFilter.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A Task of Array of TokenStatus.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IUserTokenClient.GetAadTokensAsync(System.String,System.String,System.String[],Microsoft.Agents.Core.Models.ChannelId,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves Azure Active Directory tokens for particular resources on a configured connection.
+            </summary>
+            <param name="userId">The user id that will be associated with the token.</param>
+            <param name="connectionName">Name of the auth connection to use.</param>
+            <param name="resourceUrls">The list of resource URLs to retrieve tokens for.</param>
+            <param name="channelId">The channel Id that will be associated with the token.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A Task of Dictionary of resourceUrl to the corresponding TokenResponse.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IUserTokenClient.ExchangeTokenAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,Microsoft.Agents.Core.Models.TokenExchangeRequest,System.Threading.CancellationToken)">
+            <summary>
+            Performs a token exchange operation such as for single sign-on.
+            </summary>
+            <param name="userId">The user id that will be associated with the token.</param>
+            <param name="connectionName">Name of the auth connection to use.</param>
+            <param name="channelId">The channel Id that will be associated with the token.</param>
+            <param name="exchangeRequest">The exchange request details, either a token to exchange or a uri to exchange.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <exception>ErrorResponseException</exception>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.IUserTokenClient.GetTokenOrSignInResourceAsync(System.String,Microsoft.Agents.Core.Models.IActivity,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Get the token or sign in resource for a user.
+            </summary>
+            <param name="connectionName">Name of the auth connection to use.</param>
+            <param name="activity"></param>
+            <param name="code">(Optional) Optional user entered code to validate.</param>
+            <param name="finalRedirect">The final URL that the OAuth flow will redirect to.</param>
+            <param name="fwdUrl"></param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> representing the result of the asynchronous operation.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.MCSConnectorClient">
+            <summary>
+            This is an IConnectorClient suited for communicating with Microsoft Copilot Studio via a Power Apps Connector request.
+            </summary>
+            <remarks>
+            The only supported operations are <c>IConversations.SendToConversationAsync</c> and <c>IConversations.ReplyToActivityAsync</c>.
+            </remarks>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.ConversationResponseUnAuthorized">
+            <summary>
+              Looks up a localized string similar to The Access Token created to respond to a request from the agent was rejected by the remote endpoint.  This can be caused by the incorrect connection configuration. Please verify that configuration against the expected configuration. .
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.CreateConversationError">
+            <summary>
+              Looks up a localized string similar to CreateConversation operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.GetAttachment_Error">
+            <summary>
+              Looks up a localized string similar to GetAttachment operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.GetAttachmentInfoError">
+            <summary>
+              Looks up a localized string similar to GetAttachmentInfo operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.GetConversationsError">
+            <summary>
+              Looks up a localized string similar to GetConversations operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.GetSignInResourceAsync_BadRequest">
+            <summary>
+              Looks up a localized string similar to Unable to locate the OAuth Configuration.  If you are using Azure Bot Service, please verify that the OAuth configuration exists.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.ReplyToActivityError">
+            <summary>
+              Looks up a localized string similar to ReplyToActivity operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendConversationHistoryError">
+            <summary>
+              Looks up a localized string similar to SendConversationHistory operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendDeleteActivity">
+            <summary>
+              Looks up a localized string similar to DeleteActivity operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendDeleteConversationMember">
+            <summary>
+              Looks up a localized string similar to DeleteConversationMember operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendGetActivityMembers">
+            <summary>
+              Looks up a localized string similar to GetActivityMembers operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendGetConversationMember">
+            <summary>
+              Looks up a localized string similar to GetConversationMember operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendGetConversationMembers">
+            <summary>
+              Looks up a localized string similar to GetConversationMembers operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendGetConversationPagedMembers">
+            <summary>
+              Looks up a localized string similar to GetConversationPagedMembers operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendToConversationError">
+            <summary>
+              Looks up a localized string similar to SendToConversation operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendUpdateActivityError">
+            <summary>
+              Looks up a localized string similar to UpdateActivity operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.SendUploadAttachment">
+            <summary>
+              Looks up a localized string similar to UploadAttachment operation returned an invalid status code &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceExchangeErrorResponse">
+            <summary>
+              Looks up a localized string similar to The Token Service was unable to exchange the token.  Check OAuth Connection configuration for &apos;{0}&apos; on the Azure Bot and try again.  The response is &apos;{1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceExchangeFailed">
+            <summary>
+              Looks up a localized string similar to The Token Service was unable to exchange the token.  Check OAuth Connection configuration for &apos;{0}&apos; on the Azure Bot and try again..
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceExchangeUnexpected">
+            <summary>
+              Looks up a localized string similar to The Token Service returned an unexpected response for Exchange: &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceGetAadTokenUnexpected">
+            <summary>
+              Looks up a localized string similar to The Token Service returned an unexpected response for GetAadToken: &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceGetSignInResourceUnexpected">
+            <summary>
+              Looks up a localized string similar to The Token Service returned an unexpected response for GetSignInResource: &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceGetSignInUrlUnexpected">
+            <summary>
+              Looks up a localized string similar to The Token Service returned an unexpected response for GetSignInUrl: &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceGetTokenOrSignInResourceUnexpected">
+            <summary>
+              Looks up a localized string similar to The Token Service returned an unexpected response for GetTokenOrSignInResource: &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceGetTokenStatusUnexpected">
+            <summary>
+              Looks up a localized string similar to The Token Service returned an unexpected response for GetTokenStatus: &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceGetTokenUnexpected">
+            <summary>
+              Looks up a localized string similar to The Token Service returned an unexpected response for GetToken: &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Properties.Resources.TokenServiceSignOutUnexpected">
+            <summary>
+              Looks up a localized string similar to The Token Service returned an unexpected response for SignOut: &apos;({0}) {1}&apos;.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.AgentSignInRestClient.GetSignInUrlAsync(System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.AgentSignInRestClient.GetSignInResourceAsync(System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.AttachmentsRestClient.GetAttachmentUri(System.String,System.String)">
+            <summary>
+            Get the URI of an attachment view.
+            </summary>
+            <param name="attachmentId">id of the attachment.</param>
+            <param name="viewId">default is "original".</param>
+            <returns>uri.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.AttachmentsRestClient.GetAttachmentInfoAsync(System.String,System.Threading.CancellationToken)">
+            <summary> GetAttachmentInfo. </summary>
+            <param name="attachmentId"> attachment id. </param>
+            <param name="cancellationToken"> The cancellation token to use. </param>
+            <exception cref="T:System.ArgumentNullException"> <paramref name="attachmentId"/> is null. </exception>
+            <remarks> Get AttachmentInfo structure describing the attachment views. </remarks>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.AttachmentsRestClient.GetAttachmentAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary> GetAttachment. </summary>
+            <param name="attachmentId"> attachment id. </param>
+            <param name="viewId"> View id from attachmentInfo. </param>
+            <param name="cancellationToken"> The cancellation token to use. </param>
+            <exception cref="T:System.ArgumentNullException"> <paramref name="attachmentId"/> or <paramref name="viewId"/> is null. </exception>
+            <remarks> Get the named view as binary content. </remarks>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.MaxApxConversationIdLength">
+            <summary>
+            Gets the maximum allowed length for an APX conversation ID.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.GetConversationsAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.CreateConversationAsync(Microsoft.Agents.Core.Models.ConversationParameters,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.SendToConversationAsync(System.String,Microsoft.Agents.Core.Models.IActivity,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.SendConversationHistoryAsync(System.String,Microsoft.Agents.Core.Models.Transcript,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.UpdateActivityAsync(System.String,System.String,Microsoft.Agents.Core.Models.IActivity,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.ReplyToActivityAsync(System.String,System.String,Microsoft.Agents.Core.Models.IActivity,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.DeleteActivityAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.GetConversationMembersAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.GetConversationMemberAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.DeleteConversationMemberAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.GetConversationPagedMembersAsync(System.String,System.Nullable{System.Int32},System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.GetActivityMembersAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.ConversationsRestClient.UploadAttachmentAsync(System.String,Microsoft.Agents.Connector.Types.AttachmentData,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.RestClientExceptionHelper.CreateErrorResponseException(System.Net.Http.HttpResponseMessage,Microsoft.Agents.Core.Errors.AgentErrorDefinition,System.Threading.CancellationToken,System.String[])">
+            <summary>
+            Common handler for Non Successful responses.
+            </summary>
+            <param name="httpResponse"></param>
+            <param name="errorMessage"></param>
+            <param name="cancellationToken"></param>
+            <param name="errors"></param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.RestClients.IAgentSignIn">
+            <summary>
+            AgentSignIn operations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.IAgentSignIn.GetSignInUrlAsync(System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Get sign-in URL with HTTP Message.</summary>
+            <param name='state'>State.</param>
+            <param name='codeChallenge'>Code challenge.</param>
+            <param name='emulatorUrl'>Emulator URL.</param>
+            <param name='finalRedirect'>Final redirect.</param>
+            <param name='customHeaders'>The headers that will be added to request.</param>
+            <param name='cancellationToken'>The cancellation token.</param>
+            <returns>A task that represents the work queued to execute.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.IAgentSignIn.GetSignInResourceAsync(System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Get the raw signin link to be sent to the user for signin for a connection name.
+            </summary>
+            <param name="connectionName">Name of the auth connection to use.</param>
+            <param name="activity">The <see cref="T:Microsoft.Agents.Core.Models.Activity"/> from which to derive the token exchange state.</param>
+            <param name="finalRedirect">The final URL that the OAuth flow will redirect to.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="codeChallenge"></param>
+            <param name="emulatorUrl"></param>
+            <param name="state"></param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task`1"/> representing the result of the asynchronous operation.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.RestClients.IUserToken">
+            <summary>
+            UserToken operations.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.IUserToken.GetTokenAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.Threading.CancellationToken)">
+            <summary> Get token with HTTP message.</summary>
+            <param name='userId'> User ID.</param>
+            <param name='connectionName'> Connection name.</param>
+            <param name='channelId'> Channel ID.</param>
+            <param name='code'> Code.</param>
+            <param name='cancellationToken'> The cancellation token.</param>
+            <returns>A Task representing the <see cref="T:Microsoft.Agents.Core.Models.TokenResponse"/> of the HTTP operation.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.IUserToken.GetAadTokensAsync(System.String,System.String,Microsoft.Agents.Core.Models.AadResourceUrls,Microsoft.Agents.Core.Models.ChannelId,System.Threading.CancellationToken)">
+            <summary>Get AAD token with HTTP message.</summary>
+            <param name='userId'> User ID.</param>
+            <param name='connectionName'> Connection name.</param>
+            <param name='aadResourceUrls'>AAD resource URLs. </param>
+            <param name='channelId'>The channel ID. </param>
+            <param name='cancellationToken'> The cancellation token.</param>
+            <returns>A Task representing the <see cref="T:Microsoft.Agents.Core.Models.TokenResponse"/> of the HTTP operation.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.IUserToken.SignOutAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.Threading.CancellationToken)">
+            <summary>Sign out with HTTP message.</summary>
+            <param name='userId'> User ID.</param>
+            <param name='connectionName'>Connection name. </param>
+            <param name='channelId'> Channel ID. </param>
+            <param name='cancellationToken'> The cancellation token. </param>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.IUserToken.GetTokenStatusAsync(System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.Threading.CancellationToken)">
+            <summary>Get the token status with HTTP message. </summary>
+            <param name='userId'> User ID.</param>
+            <param name='channelId'> Channel ID.</param>
+            <param name='include'> Include.</param>
+            <param name='cancellationToken'> The cancellation token. </param>
+            <returns>A task representing an IList of <see cref="T:Microsoft.Agents.Core.Models.TokenStatus"/> from the HTTP operation.</returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.IUserToken.ExchangeAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,Microsoft.Agents.Core.Models.TokenExchangeRequest,System.Threading.CancellationToken)">
+            <summary> Exchange. </summary>
+            <param name='operations'>
+            The operations group for this extension method.
+            </param>
+            <param name='userId'> User ID. </param>
+            <param name='connectionName'> Connection name. </param>
+            <param name='channelId'> Channel ID. </param>
+            <param name='exchangeRequest'> Exchange request. </param>
+            <param name='cancellationToken'> The cancellation token. </param>
+            <returns> A task that represents the work queued to execute. </returns>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.IUserToken.GetTokenOrSignInResourceAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary> Get token or sign in resource with HTTP message. </summary>
+            <param name="userId"> User ID.</param>
+            <param name="connectionName"> Connection name.</param>
+            <param name="channelId"> Channel ID.</param>
+            <param name="code"> Code.</param>
+            <param name="state"> State.</param>
+            <param name="finalRedirect"> Final redirect.</param>
+            <param name="fwdUrl"> Fwd URL.</param>
+            <param name="cancellationToken"> The cancellation token.</param>
+            <returns>A Task representing the <see cref="T:Microsoft.Agents.Core.Models.TokenOrSignInResourceResponse"/> of the HTTP operation.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.RestClients.RestPipeline">
+            <summary>
+            Central HTTP send/receive helper used by all inner REST clients.
+            This is the single location for platform-specific (#if !NETSTANDARD) deserialization logic.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.RestPipeline.SendRawAsync(Microsoft.Agents.Connector.IRestTransport,Microsoft.Agents.Connector.RestClients.RestRequest,System.Threading.CancellationToken)">
+            <summary>
+            Sends <paramref name="request"/> and returns the raw <see cref="T:System.Net.Http.HttpResponseMessage"/>.
+            The caller is responsible for disposing the response.
+            Use this for methods that need to branch on specific status codes.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.RestPipeline.ReadContentAsync``1(System.Net.Http.HttpResponseMessage,System.Threading.CancellationToken)">
+            <summary>
+            Deserializes JSON from the response content.
+            This is the SINGLE location for the #if !NETSTANDARD deserialization pattern.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.RestPipeline.ReadAsStringAsync(System.Net.Http.HttpResponseMessage,System.Threading.CancellationToken)">
+            <summary>
+            Reads response content as a string.
+            This is the SINGLE location for the #if !NETSTANDARD string-reading pattern.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.RestClients.RestRequest">
+            <summary>
+            Fluent builder for <see cref="T:System.Net.Http.HttpRequestMessage"/>.
+            Replaces the Create*Request() helper methods scattered across REST clients.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.RestRequest.WithBody``1(``0)">
+            <summary>Sets the JSON request body.</summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.RestRequest.WithQuery(System.String,System.String,System.Boolean)">
+            <summary>Appends a query parameter. Null values are omitted.</summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.RestRequest.Build(System.Uri)">
+            <summary>
+            Builds the <see cref="T:System.Net.Http.HttpRequestMessage"/>.
+            The caller is responsible for disposing the returned message.
+            - URI is resolved relative to <paramref name="baseUri"/> (trailing slash is ensured).
+            - Accept: application/json is added.
+            - Body (if set) is serialized as application/json using ProtocolJsonSerializer.
+            Auth headers are NOT added here; those come from IRestTransport.GetHttpClientAsync().
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.UserTokenRestClient.ExchangeAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,Microsoft.Agents.Core.Models.TokenExchangeRequest,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.UserTokenRestClient.GetTokenAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.UserTokenRestClient.GetAadTokensAsync(System.String,System.String,Microsoft.Agents.Core.Models.AadResourceUrls,Microsoft.Agents.Core.Models.ChannelId,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.UserTokenRestClient.SignOutAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.UserTokenRestClient.GetTokenStatusAsync(System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestClients.UserTokenRestClient.GetTokenOrSignInResourceAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc/>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.RestConnectorClient">
+            <summary>
+            The Connector REST API allows your Agent to send and receive messages to channels configured in the Azure Bot Service.
+            The Connector service uses industry-standard REST and JSON over HTTPS.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.RestUserTokenClient">
+            <summary>
+            Client for OAuth flow using the TokenAPI endpoints.  This uses the Azure Bot Service Token Service to facilitate the token exchange.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestUserTokenClient.GetUserTokenAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestUserTokenClient.GetSignInResourceAsync(System.String,Microsoft.Agents.Core.Models.IActivity,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestUserTokenClient.SignOutUserAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestUserTokenClient.GetTokenStatusAsync(System.String,Microsoft.Agents.Core.Models.ChannelId,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestUserTokenClient.GetAadTokensAsync(System.String,System.String,System.String[],Microsoft.Agents.Core.Models.ChannelId,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestUserTokenClient.ExchangeTokenAsync(System.String,System.String,Microsoft.Agents.Core.Models.ChannelId,Microsoft.Agents.Core.Models.TokenExchangeRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestUserTokenClient.GetTokenOrSignInResourceAsync(System.String,Microsoft.Agents.Core.Models.IActivity,System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Agents.Connector.RestUserTokenClient.CreateTokenExchangeState(System.String,System.String,Microsoft.Agents.Core.Models.IActivity)">
+            <summary>
+            Helper function to create the base64 encoded token exchange state used in GetSignInResourceAsync calls.
+            </summary>
+            <param name="appId">The appId to include in the token exchange state.</param>
+            <param name="connectionName">The connectionName to include in the token exchange state.</param>
+            <param name="activity">The <see cref="T:Microsoft.Agents.Core.Models.IActivity"/> from which to derive the token exchange state.</param>
+            <returns>base64 encoded token exchange state.</returns>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Constants">
+            <summary>
+            Telemetry constant names for spans and metrics used by the connector and user-token REST clients.
+            </summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeReplyToActivity">
+            <summary>Activity name for replying to an existing activity.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeSendToConversation">
+            <summary>Activity name for sending an activity to a conversation.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeUpdateActivity">
+            <summary>Activity name for updating an existing activity via the connector.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeDeleteActivity">
+            <summary>Activity name for deleting an activity via the connector.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeCreateConversation">
+            <summary>Activity name for creating a new conversation.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetConversations">
+            <summary>Activity name for retrieving a list of conversations.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetConversationMembers">
+            <summary>Activity name for retrieving the members of a conversation.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeUploadAttachment">
+            <summary>Activity name for uploading an attachment to a conversation.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetAttachment">
+            <summary>Activity name for downloading an attachment.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetAttachmentInfo">
+            <summary>Activity name for retrieving attachment metadata.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetToken">
+            <summary>Activity name for retrieving a user token via the token service.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeSignOut">
+            <summary>Activity name for signing a user out via the token service.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetSignInResource">
+            <summary>Activity name for retrieving a sign-in resource URL.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeExchangeToken">
+            <summary>Activity name for exchanging a token via the token service.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetTokenOrSignInResource">
+            <summary>Activity name for retrieving a token or sign-in resource in a single call.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetTokenStatus">
+            <summary>Activity name for retrieving the token status for a user.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.ScopeGetAadTokens">
+            <summary>Activity name for retrieving AAD tokens for a user.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.MetricConnectorRequestCount">
+            <summary>Metric name for the counter of connector REST client requests.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.MetricConnectorRequestDuration">
+            <summary>Metric name for the histogram that records connector REST client request duration in milliseconds.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.MetricUserTokenRestClientRequestCount">
+            <summary>Metric name for the counter of user-token REST client requests.</summary>
+        </member>
+        <member name="F:Microsoft.Agents.Connector.Telemetry.Constants.MetricUserTokenRestClientRequestDuration">
+            <summary>Metric name for the histogram that records user-token REST client request duration in milliseconds.</summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Metrics">
+            <summary>
+            OpenTelemetry metric instruments for the connector and user-token REST clients.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Core.Telemetry.TelemetryScope"/> that traces a connector REST client request and records
+            conversation and activity identifiers as span tags together with request count and duration metrics.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> class.
+            </summary>
+            <param name="scopeName">The name of the telemetry span.</param>
+            <param name="conversationId">The conversation ID to associate with the span, or <see langword="null"/>.</param>
+            <param name="activityId">The activity ID to associate with the span, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeCreateConversation">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces a create-conversation connector request.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeCreateConversation.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeCreateConversation"/> class.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeDeleteActivity">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces a delete-activity connector request,
+            recording the conversation ID and activity ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeDeleteActivity.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeDeleteActivity"/> class.
+            </summary>
+            <param name="conversationId">The ID of the conversation containing the activity.</param>
+            <param name="activityId">The ID of the activity to delete.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeExchangeToken">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest"/> that traces a token-exchange request,
+            recording the connection name, user ID, and optional channel ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeExchangeToken.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeExchangeToken"/> class.
+            </summary>
+            <param name="connectionName">The OAuth connection name used for the token exchange.</param>
+            <param name="userId">The ID of the user performing the token exchange.</param>
+            <param name="channelId">The channel ID, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAadTokens">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest"/> that traces a get-AAD-tokens request,
+            recording the connection name, user ID, and optional channel ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAadTokens.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAadTokens"/> class.
+            </summary>
+            <param name="connectionName">The OAuth connection name.</param>
+            <param name="userId">The ID of the user whose AAD tokens are being retrieved.</param>
+            <param name="channelId">The channel ID, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAttachment">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces a get-attachment connector request,
+            recording the attachment ID and view ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAttachment.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAttachment"/> class.
+            </summary>
+            <param name="attachmentId">The ID of the attachment to retrieve.</param>
+            <param name="viewId">The view ID specifying the format of the attachment content.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAttachmentInfo">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces a get-attachment-info connector request,
+            recording the attachment ID as a span tag.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAttachmentInfo.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetAttachmentInfo"/> class.
+            </summary>
+            <param name="attachmentId">The ID of the attachment whose metadata is being retrieved.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetConversationMembers">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces a get-conversation-members connector request,
+            recording the conversation ID as a span tag.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetConversationMembers.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetConversationMembers"/> class.
+            </summary>
+            <param name="conversationId">The ID of the conversation whose members are being retrieved.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetConversations">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces a get-conversations connector request.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetConversations.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetConversations"/> class.
+            </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetSignInResource">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest"/> that traces a get-sign-in-resource request,
+            recording the connection name, user ID, and optional channel ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetSignInResource.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetSignInResource"/> class.
+            </summary>
+            <param name="connectionName">The OAuth connection name.</param>
+            <param name="userId">The ID of the user requesting the sign-in resource.</param>
+            <param name="channelId">The channel ID, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetToken">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest"/> that traces a get-user-token request,
+            recording the connection name, user ID, and optional channel ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetToken.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetToken"/> class.
+            </summary>
+            <param name="connectionName">The OAuth connection name.</param>
+            <param name="userId">The ID of the user whose token is being retrieved.</param>
+            <param name="channelId">The channel ID, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetTokenOrSignInResource">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest"/> that traces a get-token-or-sign-in-resource request,
+            recording the connection name, user ID, and optional channel ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetTokenOrSignInResource.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetTokenOrSignInResource"/> class.
+            </summary>
+            <param name="connectionName">The OAuth connection name.</param>
+            <param name="userId">The ID of the user whose token or sign-in resource is being retrieved.</param>
+            <param name="channelId">The channel ID, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetTokenStatus">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest"/> that traces a get-token-status request,
+            recording the user ID and optional channel ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetTokenStatus.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeGetTokenStatus"/> class.
+            </summary>
+            <param name="userId">The ID of the user whose token status is being checked.</param>
+            <param name="channelId">The channel ID, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeReplyToActivity">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces a reply-to-activity connector request,
+            recording the conversation ID and activity ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeReplyToActivity.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeReplyToActivity"/> class.
+            </summary>
+            <param name="conversationId">The conversation ID associated with the activity.</param>
+            <param name="activityId">The ID of the activity being replied to.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeSendToConversation">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces a send-to-conversation connector request,
+            recording the conversation ID and optional activity ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeSendToConversation.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeSendToConversation"/> class.
+            </summary>
+            <param name="conversationId">The ID of the conversation to send the activity to.</param>
+            <param name="activityId">The activity ID to associate with the span, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeSignOut">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest"/> that traces a sign-out request,
+            recording the connection name, user ID, and optional channel ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeSignOut.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeSignOut"/> class.
+            </summary>
+            <param name="connectionName">The OAuth connection name used for the sign-out.</param>
+            <param name="userId">The ID of the user signing out.</param>
+            <param name="channelId">The channel ID, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUpdateActivity">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces an update-activity connector request,
+            recording the conversation ID and activity ID as span tags.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUpdateActivity.#ctor(System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUpdateActivity"/> class.
+            </summary>
+            <param name="conversationId">The ID of the conversation containing the activity.</param>
+            <param name="activityId">The ID of the activity to update.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUploadAttachment">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeConnectorRequest"/> that traces an upload-attachment connector request,
+            recording the conversation ID as a span tag.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUploadAttachment.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUploadAttachment"/> class.
+            </summary>
+            <param name="conversationId">The ID of the conversation the attachment is being uploaded to.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest">
+            <summary>
+            A <see cref="T:Microsoft.Agents.Core.Telemetry.TelemetryScope"/> that traces a user-token REST client request and records
+            connection name, user ID, and channel ID as span tags together with request count and duration metrics.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Telemetry.Scopes.ScopeUserTokenRestClientRequest"/> class.
+            </summary>
+            <param name="spanName">The name of the telemetry span.</param>
+            <param name="connectionName">The OAuth connection name, or <see langword="null"/>.</param>
+            <param name="userId">The user ID, or <see langword="null"/>.</param>
+            <param name="channelId">The channel ID, or <see langword="null"/>.</param>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Types.AttachmentData">
+            <summary> Attachment data. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.AttachmentData.#ctor">
+            <summary> Initializes a new instance of AttachmentData. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.AttachmentData.#ctor(System.String,System.String,System.Byte[],System.Byte[])">
+            <summary>Initializes a new instance of the <see cref="T:Microsoft.Agents.Connector.Types.AttachmentData"/> class.</summary>
+            <param name="type">Content-Type of the attachment.</param>
+            <param name="name">Name of the attachment.</param>
+            <param name="originalBase64">Attachment content.</param>
+            <param name="thumbnailBase64">Attachment thumbnail.</param>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentData.Type">
+            <summary> Content-Type of the attachment. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentData.Name">
+            <summary> Name of the attachment. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentData.OriginalBase64">
+            <summary> Attachment content. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentData.ThumbnailBase64">
+            <summary> Attachment thumbnail. </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Types.AttachmentInfo">
+            <summary> Metadata for an attachment. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.AttachmentInfo.#ctor">
+            <summary> Initializes a new instance of AttachmentInfo. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.AttachmentInfo.#ctor(System.String,System.String,System.Collections.Generic.IList{Microsoft.Agents.Connector.Types.AttachmentView})">
+            <summary> Initializes a new instance of AttachmentInfo. </summary>
+            <param name="name"> Name of the attachment. </param>
+            <param name="type"> ContentType of the attachment. </param>
+            <param name="views"> attachment views. </param>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentInfo.Name">
+            <summary> Name of the attachment. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentInfo.Type">
+            <summary> ContentType of the attachment. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentInfo.Views">
+            <summary> attachment views. </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Types.AttachmentView">
+            <summary> Attachment View name and size. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.AttachmentView.#ctor">
+            <summary> Initializes a new instance of AttachmentView. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.AttachmentView.#ctor(System.String,System.Nullable{System.Int32})">
+            <summary> Initializes a new instance of AttachmentView. </summary>
+            <param name="viewId"> Id of the attachment. </param>
+            <param name="size"> Size of the attachment. </param>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentView.ViewId">
+            <summary> Id of the attachment. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.AttachmentView.Size">
+            <summary> Size of the attachment. </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Types.ConversationMembers">
+            <summary> Conversation and its members. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.ConversationMembers.#ctor">
+            <summary> Initializes a new instance of ConversationMembers. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.ConversationMembers.#ctor(System.String,System.Collections.Generic.IList{Microsoft.Agents.Core.Models.ChannelAccount})">
+            <summary> Initializes a new instance of ConversationMembers. </summary>
+            <param name="id"> Conversation ID. </param>
+            <param name="members"> List of members in this conversation. </param>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.ConversationMembers.Id">
+            <summary> Conversation ID. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.ConversationMembers.Members">
+            <summary> List of members in this conversation. </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Types.ConversationResourceResponse">
+            <summary> A response containing a resource. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.ConversationResourceResponse.#ctor">
+            <summary> Initializes a new instance of ConversationResourceResponse. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.ConversationResourceResponse.#ctor(System.String,System.String,System.String)">
+            <summary> Initializes a new instance of ConversationResourceResponse. </summary>
+            <param name="activityId"> ID of the Activity (if sent). </param>
+            <param name="serviceUrl"> Service endpoint where operations concerning the conversation may be performed. </param>
+            <param name="id"> Id of the resource. </param>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.ConversationResourceResponse.ActivityId">
+            <summary> ID of the Activity (if sent). </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.ConversationResourceResponse.ServiceUrl">
+            <summary> Service endpoint where operations concerning the conversation may be performed. </summary>
+            
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.ConversationResourceResponse.Id">
+            <summary> Id of the resource. </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Types.ConversationsResult">
+            <summary> Conversations result. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.ConversationsResult.#ctor">
+            <summary> Initializes a new instance of ConversationsResult. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.ConversationsResult.#ctor(System.String,System.Collections.Generic.IList{Microsoft.Agents.Connector.Types.ConversationMembers})">
+            <summary> Initializes a new instance of ConversationsResult. </summary>
+            <param name="continuationToken"> Paging token. </param>
+            <param name="conversations"> List of conversations. </param>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.ConversationsResult.ContinuationToken">
+            <summary> Paging token. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.ConversationsResult.Conversations">
+            <summary> List of conversations. </summary>
+        </member>
+        <member name="T:Microsoft.Agents.Connector.Types.PagedMembersResult">
+            <summary> Page of members. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.PagedMembersResult.#ctor">
+            <summary> Initializes a new instance of PagedMembersResult. </summary>
+        </member>
+        <member name="M:Microsoft.Agents.Connector.Types.PagedMembersResult.#ctor(System.String,System.Collections.Generic.IList{Microsoft.Agents.Core.Models.ChannelAccount})">
+            <summary> Initializes a new instance of PagedMembersResult. </summary>
+            <param name="continuationToken"> Paging token. </param>
+            <param name="members"> The Channel Accounts. </param>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.PagedMembersResult.ContinuationToken">
+            <summary> Paging token. </summary>
+        </member>
+        <member name="P:Microsoft.Agents.Connector.Types.PagedMembersResult.Members">
+            <summary> The Channel Accounts. </summary>
+        </member>
+    </members>
+</doc>
